@@ -133,7 +133,7 @@ Observed:
 
 - `Skill is valid!`
 - `Ran 34 tests ... OK`
-- SkillOpt aggregate eval passed: hard=1.0, soft=0.9799375, n=16.
+- SkillOpt aggregate eval passed: hard=1.0, soft=0.976859375, n=16.
 
 This validates the current skill structure, helper tests, and the SkillOpt acceptance gate for the approved P0/P1 optimization.
 

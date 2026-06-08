@@ -75,7 +75,7 @@ Observed results:
 
 - `Skill is valid!`
 - `Ran 34 tests ... OK`
-- SkillOpt aggregate eval passed: hard=1.0, soft=0.9799375, n=16.
+- SkillOpt aggregate eval passed: hard=1.0, soft=0.976859375, n=16.
 
 ## Implementation Gate After Approval
 

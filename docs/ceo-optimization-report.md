@@ -19,7 +19,7 @@ The user approved P0 + P1. The implementation landed in `bd2f47d Make CEO routin
 - Current validation after implementation:
   - `python3 /Users/owenchou/.codex/skills/.system/skill-creator/scripts/quick_validate.py /Users/owenchou/.codex/skills/ceo` passes.
   - `python3 -m unittest discover -s /Users/owenchou/.codex/skills/ceo/scripts -p 'test_*.py'` passes 34 tests.
-  - SkillOpt aggregate eval passed: hard=1.0, soft=0.9799375, n=16.
+  - SkillOpt aggregate eval passed: hard=1.0, soft=0.976859375, n=16.
 
 ## Current Strengths
 

@@ -186,7 +186,7 @@ Verification evidence:
 
 - CEO local helper tests: `python3 -m unittest discover -s scripts -p 'test_*.py'`
 - Skill creator validation: `quick_validate.py /Users/owenchou/.codex/skills/ceo`
-- SkillOpt full eval: hard=1.0, soft=0.9799375, n=16
+- SkillOpt full eval: hard=1.0, soft=0.976859375, n=16
 
 ## Remaining Public Release Gaps
 
