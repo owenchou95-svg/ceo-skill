@@ -24,7 +24,7 @@ Observed:
   - `https://github.com/owenchou95-svg/ceo-skill`
   - visibility: public
   - default branch: `main`
-- Latest commits at audit time:
+- Initial public-release baseline commits:
   - `bd2f47d Make CEO routing executable under real request pressure`
   - `bc22bd5 Add CEO skill changelog`
   - `3e29d9e Record CEO GitHub release audit`
@@ -49,10 +49,14 @@ Relevant tracked project files:
 - `LICENSE`
 - `README.md`
 - `SKILL.md`
+- `adapters/claude-code/SKILL.md`
+- `adapters/hermes/SKILL.md`
+- `adapters/openclaw/SKILL.md`
 - `agents/openai.yaml`
 - `docs/ceo-optimization-report.md`
 - `docs/ceo-optimization-test-matrix.md`
 - `docs/github-release-checklist.md`
+- `docs/multi-agent-usage.md`
 - `docs/review-packet.md`
 - `references/prompt-template.md`
 - `references/test-fixtures.md`
@@ -104,7 +108,27 @@ Main path categories:
   - `${CODEX_HOME:-$HOME/.codex}/plugins/cache`
   - `${AGENTS_HOME:-$HOME/.agents}/skills`
   - `${CLAUDE_HOME:-$HOME/.claude}/skills`
+  - `${OPENCLAW_HOME:-$HOME/.openclaw}/skills`
+  - `${HERMES_HOME:-$HOME/.hermes}/skills`
 - Historical SkillOpt local path is retained in optimization docs to preserve the acceptance record.
+
+## Multi-Agent Adapter Scan
+
+Command:
+
+```bash
+test -f adapters/claude-code/SKILL.md
+test -f adapters/openclaw/SKILL.md
+test -f adapters/hermes/SKILL.md
+test -f docs/multi-agent-usage.md
+```
+
+Observed:
+
+- Claude Code adapter exists and documents `${CLAUDE_HOME:-$HOME/.claude}/skills/ceo`.
+- OpenClaw adapter exists and documents `${OPENCLAW_HOME:-$HOME/.openclaw}/skills/ceo`.
+- Hermes adapter exists and documents `${HERMES_HOME:-$HOME/.hermes}/skills/ceo`.
+- Multi-agent guide exists and documents Codex, Claude Code, OpenClaw, and Hermes installs.
 
 ## License / Changelog
 
@@ -136,7 +160,7 @@ python3 -m unittest discover -s scripts -p 'test_*.py'
 Observed:
 
 - `Skill is valid!`
-- `Ran 34 tests ... OK`
+- `Ran 37 tests ... OK`
 - SkillOpt aggregate eval passed: hard=1.0, soft=0.976859375, n=16.
 
 This validates the current skill structure, helper tests, and the SkillOpt acceptance gate for the approved P0/P1 optimization.

@@ -12,6 +12,7 @@ from pathlib import Path
 import sys
 
 SCRIPT_DIR = Path(__file__).resolve().parent
+REPO_ROOT = SCRIPT_DIR.parent
 sys.path.insert(0, str(SCRIPT_DIR))
 import evaluate_ceo_output as evaluator
 import skill_inventory
@@ -677,6 +678,52 @@ class InventoryTests(unittest.TestCase):
         )
         self.assertLess(scored["score_breakdown"]["out_of_scope_penalty"], 0)
         self.assertIn("mismatch:markdown-not-office-doc", scored["matched_terms"])
+
+    def test_default_roots_include_multi_agent_hosts(self) -> None:
+        roots = skill_inventory.default_roots()
+        self.assertIn(str(Path.home() / ".claude" / "skills"), roots)
+        self.assertIn(str(Path.home() / ".openclaw" / "skills"), roots)
+        self.assertIn(str(Path.home() / ".hermes" / "skills"), roots)
+
+
+class ReleaseArtifactTests(unittest.TestCase):
+    def test_multi_agent_adapter_files_exist_with_frontmatter(self) -> None:
+        adapters = {
+            "claude-code": "Claude Code",
+            "openclaw": "OpenClaw",
+            "hermes": "Hermes",
+        }
+        for adapter, host_name in adapters.items():
+            with self.subTest(adapter=adapter):
+                path = REPO_ROOT / "adapters" / adapter / "SKILL.md"
+                self.assertTrue(path.exists(), f"missing {path}")
+                text = path.read_text(encoding="utf-8")
+                self.assertTrue(text.startswith("---\nname: ceo\n"), f"{path} must expose name: ceo")
+                self.assertIn("description:", text)
+                self.assertIn(host_name, text)
+                self.assertIn("skill_inventory.py", text)
+                self.assertIn("CEO_SKILL_HOME", text)
+
+    def test_multi_agent_docs_are_linked_and_cover_hosts(self) -> None:
+        readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+        guide = (REPO_ROOT / "docs" / "multi-agent-usage.md").read_text(encoding="utf-8")
+        skill = (REPO_ROOT / "SKILL.md").read_text(encoding="utf-8")
+
+        for required in [
+            "adapters/claude-code/SKILL.md",
+            "adapters/openclaw/SKILL.md",
+            "adapters/hermes/SKILL.md",
+            "docs/multi-agent-usage.md",
+            "OPENCLAW_HOME",
+            "HERMES_HOME",
+        ]:
+            self.assertIn(required, readme)
+
+        for required in ["Codex", "Claude Code", "OpenClaw", "Hermes", "CEO_SKILL_HOME"]:
+            self.assertIn(required, guide)
+
+        self.assertIn("${OPENCLAW_HOME:-$HOME/.openclaw}/skills", skill)
+        self.assertIn("${HERMES_HOME:-$HOME/.hermes}/skills", skill)
 
 
 if __name__ == "__main__":

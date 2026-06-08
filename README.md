@@ -1,8 +1,10 @@
 # CEO Prompt Builder
 
-CEO Prompt Builder is a Codex skill for turning rough user intent into executable agent specifications.
+CEO Prompt Builder is a multi-agent skill for turning rough user intent into executable agent specifications.
 
 It is not a prompt-polishing helper. Its job is to decide whether a request is ready for execution, route unclear requests to clarification, inspect local skill/plugin metadata, and produce a final prompt that another agent can act on with explicit requirements, boundaries, validation, and output format.
+
+The root `SKILL.md` is the canonical protocol. Host adapters for Claude Code, OpenClaw, and Hermes live under `adapters/` and point back to the same contract so the skill does not drift across agents.
 
 ## What It Does
 
@@ -80,6 +82,8 @@ The inventory helper scans configured local roots:
 - `${CODEX_HOME:-$HOME/.codex}/plugins/cache`
 - `${AGENTS_HOME:-$HOME/.agents}/skills`
 - `${CLAUDE_HOME:-$HOME/.claude}/skills`
+- `${OPENCLAW_HOME:-$HOME/.openclaw}/skills`
+- `${HERMES_HOME:-$HOME/.hermes}/skills`
 
 Run it directly:
 
@@ -88,6 +92,50 @@ python3 scripts/skill_inventory.py --request "<raw user request>" --format markd
 ```
 
 The report includes scanned files, unique skills, duplicates, covered roots, complexity, candidate limits, top candidates, finalists to read, exact `invocation_name` values, and out-of-scope hints when detected.
+
+## Multi-Agent Installation
+
+Codex:
+
+```bash
+mkdir -p "${CODEX_HOME:-$HOME/.codex}/skills"
+git clone https://github.com/owenchou95-svg/ceo-skill.git "${CODEX_HOME:-$HOME/.codex}/skills/ceo"
+```
+
+Claude Code:
+
+```bash
+mkdir -p "${CLAUDE_HOME:-$HOME/.claude}/skills"
+git clone https://github.com/owenchou95-svg/ceo-skill.git "${CLAUDE_HOME:-$HOME/.claude}/skills/ceo"
+```
+
+OpenClaw:
+
+```bash
+mkdir -p "${OPENCLAW_HOME:-$HOME/.openclaw}/skills"
+git clone https://github.com/owenchou95-svg/ceo-skill.git "${OPENCLAW_HOME:-$HOME/.openclaw}/skills/ceo"
+```
+
+Hermes:
+
+```bash
+mkdir -p "${HERMES_HOME:-$HOME/.hermes}/skills"
+git clone https://github.com/owenchou95-svg/ceo-skill.git "${HERMES_HOME:-$HOME/.hermes}/skills/ceo"
+```
+
+For custom or project-local installs, set:
+
+```bash
+export CEO_SKILL_HOME="/path/to/ceo-skill"
+```
+
+Detailed host usage is documented in `docs/multi-agent-usage.md`.
+
+Adapter entry points:
+
+- `adapters/claude-code/SKILL.md`
+- `adapters/openclaw/SKILL.md`
+- `adapters/hermes/SKILL.md`
 
 ## Output Contract
 
@@ -140,11 +188,21 @@ python3 scripts/evaluate_ceo_output.py --request "<raw user request>" path/to/ce
 .
 ├── SKILL.md
 ├── README.md
+├── adapters/
+│   ├── claude-code/
+│   │   └── SKILL.md
+│   ├── hermes/
+│   │   └── SKILL.md
+│   └── openclaw/
+│       └── SKILL.md
 ├── agents/
 │   └── openai.yaml
 ├── docs/
 │   ├── ceo-optimization-report.md
 │   ├── ceo-optimization-test-matrix.md
+│   ├── github-release-audit.md
+│   ├── github-release-checklist.md
+│   ├── multi-agent-usage.md
 │   └── review-packet.md
 ├── references/
 │   ├── prompt-template.md
@@ -190,11 +248,11 @@ Verification evidence:
 
 ## Remaining Public Release Gaps
 
-- None. The repository is ready for public use.
+- None. The repository includes Codex, Claude Code, OpenClaw, and Hermes installation paths plus adapter files.
 
 ## Public Release Notes
 
-This skill uses portable defaults based on `CODEX_HOME`, `AGENTS_HOME`, and `CLAUDE_HOME`. If unset, they resolve to `$HOME/.codex`, `$HOME/.agents`, and `$HOME/.claude`.
+This skill uses portable defaults based on `CODEX_HOME`, `AGENTS_HOME`, `CLAUDE_HOME`, `OPENCLAW_HOME`, `HERMES_HOME`, and `CEO_SKILL_HOME`. If unset, host roots resolve to `$HOME/.codex`, `$HOME/.agents`, `$HOME/.claude`, `$HOME/.openclaw`, and `$HOME/.hermes`.
 
 No new runtime dependencies are required for the current helper scripts beyond Python 3.
 

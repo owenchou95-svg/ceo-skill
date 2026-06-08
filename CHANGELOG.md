@@ -8,6 +8,8 @@ Dates use local project context date unless otherwise noted.
 
 ### Added
 
+- Added multi-agent adapters for Claude Code, OpenClaw, and Hermes.
+- Added `docs/multi-agent-usage.md` with host-specific install and dispatch guidance.
 - Initialized the CEO skill as a standalone git repository.
 - Added `README.md` for GitHub-facing project introduction.
 - Added review documentation for the planned CEO optimization:
@@ -36,6 +38,7 @@ Dates use local project context date unless otherwise noted.
 - Synchronized SkillOpt CEO benchmark/evaluator to `$office-hours` clarification handoff.
 - Passed SkillOpt CEO eval on train/val/test aggregate: hard=1.0, soft=0.976859375, n=16.
 - Replaced user-specific default paths with `CODEX_HOME`, `AGENTS_HOME`, `CLAUDE_HOME`, and `$HOME` fallbacks.
+- Extended default skill inventory roots to include `OPENCLAW_HOME` and `HERMES_HOME`.
 
 ## 2026-06-08
 

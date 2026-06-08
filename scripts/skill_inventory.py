@@ -24,6 +24,14 @@ def claude_home() -> Path:
     return Path(os.environ.get("CLAUDE_HOME", Path.home() / ".claude")).expanduser()
 
 
+def openclaw_home() -> Path:
+    return Path(os.environ.get("OPENCLAW_HOME", Path.home() / ".openclaw")).expanduser()
+
+
+def hermes_home() -> Path:
+    return Path(os.environ.get("HERMES_HOME", Path.home() / ".hermes")).expanduser()
+
+
 def default_roots() -> list[str]:
     code_home = codex_home()
     return [
@@ -31,6 +39,8 @@ def default_roots() -> list[str]:
         str(code_home / "plugins" / "cache"),
         str(agents_home() / "skills"),
         str(claude_home() / "skills"),
+        str(openclaw_home() / "skills"),
+        str(hermes_home() / "skills"),
     ]
 
 

@@ -97,15 +97,19 @@ When a clarified spec is later supplied, treat it as primary context, rerun `Dem
    - If the user supplied a `Clarified Spec`, consume it before adding new assumptions.
 
 2. Run full skill inventory before selecting skills. This is a hard gate.
-   - Run `scripts/skill_inventory.py` from this skill directory with the raw user request:
+   - Run `scripts/skill_inventory.py` from this skill directory, meaning the directory that contains this `SKILL.md`, with the raw user request:
      ```bash
-     python3 "${CODEX_HOME:-$HOME/.codex}/skills/ceo/scripts/skill_inventory.py" --request "<raw user request>" --format markdown
+     cd "${CEO_SKILL_HOME:-${CODEX_HOME:-$HOME/.codex}/skills/ceo}"
+     python3 scripts/skill_inventory.py --request "<raw user request>" --format markdown
      ```
+   - If `CEO_SKILL_HOME` is not set and this skill is installed outside Codex, resolve the equivalent install root first, such as `${CLAUDE_HOME:-$HOME/.claude}/skills/ceo`, `${OPENCLAW_HOME:-$HOME/.openclaw}/skills/ceo`, or `${HERMES_HOME:-$HOME/.hermes}/skills/ceo`.
    - The script must scan all configured roots:
      - `${CODEX_HOME:-$HOME/.codex}/skills`
      - `${CODEX_HOME:-$HOME/.codex}/plugins/cache`
      - `${AGENTS_HOME:-$HOME/.agents}/skills`
      - `${CLAUDE_HOME:-$HOME/.claude}/skills`
+     - `${OPENCLAW_HOME:-$HOME/.openclaw}/skills`
+     - `${HERMES_HOME:-$HOME/.hermes}/skills`
    - It reads only frontmatter `name`, `description`, and path for all `SKILL.md` files; the parser stops at the closing frontmatter marker and does not read full skill bodies during inventory.
    - It uses deterministic weighted lexical recall, not model intuition, embedding search, or a cached index.
    - Default candidate recall is top 10. Complex tasks use top 15. Full `SKILL.md` reads are limited to the top 3-4 finalists.
@@ -147,7 +151,8 @@ When a clarified spec is later supplied, treat it as primary context, rerun `Dem
 
 6. When evaluating or changing this skill, run the automated output evaluator against representative CEO outputs:
    ```bash
-   python3 "${CODEX_HOME:-$HOME/.codex}/skills/ceo/scripts/evaluate_ceo_output.py" --request "<raw user request>" path/to/ceo-output.md
+   cd "${CEO_SKILL_HOME:-${CODEX_HOME:-$HOME/.codex}/skills/ceo}"
+   python3 scripts/evaluate_ceo_output.py --request "<raw user request>" path/to/ceo-output.md
    ```
    The evaluator checks for `Triage`, `Skill Inventory Report`, `Contract Check`, required `Final Prompt` headings, traceability between selected `$skill` invocations and inventory candidates, semantic completeness, and request-aware alignment between the raw request and `Direct Path` / `Clarification Path`. If it fails, treat the CEO output as non-executable until the missing contract element is fixed.
 

@@ -22,6 +22,7 @@ Current runtime paths use environment-variable defaults. Before a broad public r
 - [x] Replace user-specific runtime paths with `${CODEX_HOME:-$HOME/.codex}`.
 - [x] Replace configured skill roots with environment-variable defaults.
 - [x] Add a portability note for `CODEX_HOME`, `AGENTS_HOME`, and `CLAUDE_HOME`.
+- [x] Add a portability note for `OPENCLAW_HOME`, `HERMES_HOME`, and `CEO_SKILL_HOME`.
 - [x] Keep only historical local paths in archived optimization/audit docs when they describe the original local implementation record.
 
 Files likely to need path review:
@@ -67,7 +68,7 @@ python3 -m unittest discover -s scripts -p 'test_*.py'
 Expected current result:
 
 - `Skill is valid!`
-- `Ran 34 tests ... OK`
+- `Ran 37 tests ... OK`
 
 ### Optimization Approval Gate
 
@@ -111,6 +112,16 @@ Before public release:
 - [x] Confirm README describes current implemented behavior, not only planned behavior.
 - [x] Keep known gaps visible until P0/P1 are actually implemented.
 - [x] Confirm validation commands still work from a fresh clone or document required path adaptation.
+- [x] Confirm README links multi-agent usage docs and adapter files.
+
+### Multi-Agent Adapters
+
+- [x] Add Claude Code adapter: `adapters/claude-code/SKILL.md`.
+- [x] Add OpenClaw adapter: `adapters/openclaw/SKILL.md`.
+- [x] Add Hermes adapter: `adapters/hermes/SKILL.md`.
+- [x] Add multi-agent usage guide: `docs/multi-agent-usage.md`.
+- [x] Confirm inventory scans `${OPENCLAW_HOME:-$HOME/.openclaw}/skills`.
+- [x] Confirm inventory scans `${HERMES_HOME:-$HOME/.hermes}/skills`.
 
 ### GitHub Remote
 
