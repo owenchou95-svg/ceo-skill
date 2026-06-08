@@ -41,6 +41,7 @@ find . -maxdepth 3 -type f | sort | sed 's#^./##'
 Relevant tracked project files:
 
 - `.gitignore`
+- `LICENSE`
 - `README.md`
 - `SKILL.md`
 - `agents/openai.yaml`
@@ -114,11 +115,11 @@ test -f README.md && echo README_EXISTS || echo README_MISSING
 
 Observed:
 
-- `LICENSE_MISSING`
+- `LICENSE_EXISTS`
 - `CHANGELOG_EXISTS`
 - `README_EXISTS`
 
-Public release should not proceed until a license is selected. `CHANGELOG.md` is optional but recommended.
+The repository uses the MIT License. `CHANGELOG.md` exists.
 
 ## Validation
 
@@ -145,16 +146,14 @@ Broad public release readiness: no.
 
 Blocking items:
 
-1. No license selected.
-2. No remote repository configured.
-3. Local `/Users/owenchou/...` paths remain embedded.
-4. Path portability policy has not been decided for broad public users.
+1. No remote repository configured.
+2. Local `/Users/owenchou/...` paths remain embedded.
+3. Path portability policy has not been decided for broad public users.
 
 ## Recommended Next Steps
 
 Before public release:
 
-1. Choose and add a license.
-2. Decide whether to keep local paths as examples or replace them with `$CODEX_HOME` / environment variables.
-3. Add a GitHub remote.
-4. Push only after privacy/path/license decisions are resolved.
+1. Decide whether to keep local paths as examples or replace them with `$CODEX_HOME` / environment variables.
+2. Add a GitHub remote.
+3. Push only after privacy/path decisions are resolved.

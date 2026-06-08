@@ -190,10 +190,14 @@ Verification evidence:
 
 ## Remaining Public Release Gaps
 
-- License selection and path portability review are still needed before broad public release.
+- Path portability review is still needed before broad public release.
 
 ## Public Release Notes
 
 This skill currently contains local default paths. Before distributing it broadly, consider replacing user-specific paths with configurable environment variables such as `CODEX_HOME`, or document the expected local layout clearly.
 
 No new runtime dependencies are required for the current helper scripts beyond Python 3.
+
+## License
+
+This project is licensed under the MIT License. See `LICENSE` for details.

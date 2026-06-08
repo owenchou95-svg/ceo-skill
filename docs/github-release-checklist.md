@@ -97,14 +97,14 @@ Before claiming final optimization completion:
 
 ### License
 
-No license has been selected in this repository yet.
+The repository uses the MIT License.
 
 Before public release:
 
-- [ ] Choose a license.
-- [ ] Add `LICENSE`.
-- [ ] Mention the license in `README.md`.
-- [ ] Confirm whether copied or adapted patterns from external projects require attribution.
+- [x] Choose a license.
+- [x] Add `LICENSE`.
+- [x] Mention the license in `README.md`.
+- [x] Confirm whether copied or adapted patterns from external projects require attribution.
 
 ### README Accuracy
 
@@ -132,7 +132,7 @@ Then push:
 git push -u origin main
 ```
 
-Do not push until repository privacy, license, path portability, and approval status are correct.
+Do not push until repository privacy, path portability, and approval status are correct.
 
 ## Current Publication Status
 
@@ -142,6 +142,5 @@ Ready for broad public release: not yet.
 
 Blocking items for broad release:
 
-- License is not selected.
 - Local paths are still embedded.
 - No GitHub remote is configured.

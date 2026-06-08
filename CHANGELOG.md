@@ -17,6 +17,7 @@ Dates use local project context date unless otherwise noted.
 - Added release-readiness documentation:
   - `docs/github-release-checklist.md`
   - `docs/github-release-audit.md`
+- Added MIT License for public distribution.
 
 ### Verified
 
@@ -25,7 +26,6 @@ Dates use local project context date unless otherwise noted.
 
 ### Pending
 
-- License selection before broad public release.
 - Path portability review before broad public release.
 
 ### Changed
@@ -61,4 +61,4 @@ Dates use local project context date unless otherwise noted.
 ### Notes
 
 - Functional P0/P1 optimization changes are implemented in `bd2f47d`.
-- Broad public release is not ready until license, path portability, and GitHub remote decisions are resolved.
+- Broad public release is not ready until path portability and GitHub remote decisions are resolved.
