@@ -1,7 +1,7 @@
 # GitHub Release Audit
 
 Date: 2026-06-08
-Status: optimization complete; private-review ready; broad public release not ready.
+Status: optimization complete; path portability complete; private-review ready; broad public release blocked only on remote publication.
 
 This audit records the actual release-readiness checks run against the CEO skill repository. It does not change code, choose a license, add a remote, or push to GitHub.
 
@@ -88,20 +88,18 @@ rg -n "/Users/owenchou|/Users/" .
 
 Observed:
 
-- Local machine paths are present in `SKILL.md`, `README.md`, `scripts/skill_inventory.py`, tests, fixtures, and docs.
-- This is expected for the installed local skill, but it blocks broad public release unless kept deliberately as examples.
+- Runtime paths in `SKILL.md`, `README.md`, and `scripts/skill_inventory.py` use `CODEX_HOME`, `AGENTS_HOME`, `CLAUDE_HOME`, and `$HOME` fallbacks.
+- Remaining machine-specific path references, if any, are historical implementation records in review/audit docs or command examples from the local acceptance run.
+- These historical paths are not runtime defaults and no longer block public release.
 
 Main path categories:
 
 - Codex skill roots:
-  - `/Users/owenchou/.codex/skills`
-  - `/Users/owenchou/.codex/plugins/cache`
-  - `/Users/owenchou/.agents/skills`
-  - `/Users/owenchou/.claude/skills`
-- SkillOpt local path:
-  - `/Users/owenchou/SkillOpt`
-- Test fixture sample paths:
-  - `/Users/owenchou/project`
+  - `${CODEX_HOME:-$HOME/.codex}/skills`
+  - `${CODEX_HOME:-$HOME/.codex}/plugins/cache`
+  - `${AGENTS_HOME:-$HOME/.agents}/skills`
+  - `${CLAUDE_HOME:-$HOME/.claude}/skills`
+- Historical SkillOpt local path is retained in optimization docs to preserve the acceptance record.
 
 ## License / Changelog
 
@@ -126,7 +124,7 @@ The repository uses the MIT License. `CHANGELOG.md` exists.
 Command:
 
 ```bash
-python3 /Users/owenchou/.codex/skills/.system/skill-creator/scripts/quick_validate.py /Users/owenchou/.codex/skills/ceo
+python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-creator/scripts/quick_validate.py" "${CODEX_HOME:-$HOME/.codex}/skills/ceo"
 python3 -m unittest discover -s scripts -p 'test_*.py'
 ```
 
@@ -147,13 +145,10 @@ Broad public release readiness: no.
 Blocking items:
 
 1. No remote repository configured.
-2. Local `/Users/owenchou/...` paths remain embedded.
-3. Path portability policy has not been decided for broad public users.
 
 ## Recommended Next Steps
 
 Before public release:
 
-1. Decide whether to keep local paths as examples or replace them with `$CODEX_HOME` / environment variables.
-2. Add a GitHub remote.
-3. Push only after privacy/path decisions are resolved.
+1. Add a GitHub remote.
+2. Push after final privacy scan passes.

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import subprocess
 import tempfile
 import unittest
@@ -469,15 +470,35 @@ class InventoryTests(unittest.TestCase):
             self.assertEqual([], report["finalists_to_read"])
 
     def test_plugin_invocation_name_uses_plugin_prefix(self) -> None:
-        path = "/Users/owenchou/.codex/plugins/cache/vendor/sample-plugin/1.2.3/skills/do-thing/SKILL.md"
-        self.assertEqual("sample-plugin:do-thing", skill_inventory.invocation_name_for_path(path, "do-thing"))
+        old_codex_home = os.environ.get("CODEX_HOME")
+        with tempfile.TemporaryDirectory() as temp:
+            os.environ["CODEX_HOME"] = str(Path(temp) / ".codex")
+            path = (
+                Path(os.environ["CODEX_HOME"])
+                / "plugins/cache/vendor/sample-plugin/1.2.3/skills/do-thing/SKILL.md"
+            )
+            self.assertEqual("sample-plugin:do-thing", skill_inventory.invocation_name_for_path(str(path), "do-thing"))
+        if old_codex_home is None:
+            os.environ.pop("CODEX_HOME", None)
+        else:
+            os.environ["CODEX_HOME"] = old_codex_home
 
     def test_plugin_prefixed_frontmatter_is_not_double_prefixed(self) -> None:
-        path = "/Users/owenchou/.codex/plugins/cache/vendor/sample-plugin/1.2.3/skills/do-thing/SKILL.md"
-        self.assertEqual(
-            "sample-plugin:do-thing",
-            skill_inventory.invocation_name_for_path(path, "sample-plugin:do-thing"),
-        )
+        old_codex_home = os.environ.get("CODEX_HOME")
+        with tempfile.TemporaryDirectory() as temp:
+            os.environ["CODEX_HOME"] = str(Path(temp) / ".codex")
+            path = (
+                Path(os.environ["CODEX_HOME"])
+                / "plugins/cache/vendor/sample-plugin/1.2.3/skills/do-thing/SKILL.md"
+            )
+            self.assertEqual(
+                "sample-plugin:do-thing",
+                skill_inventory.invocation_name_for_path(str(path), "sample-plugin:do-thing"),
+            )
+        if old_codex_home is None:
+            os.environ.pop("CODEX_HOME", None)
+        else:
+            os.environ["CODEX_HOME"] = old_codex_home
 
     def test_duplicate_collapse_by_invocation_name(self) -> None:
         records = [
@@ -628,11 +649,19 @@ class InventoryTests(unittest.TestCase):
             self.assertEqual("frontend-skill", report["candidates"][0]["invocation_name"])
 
     def test_markdown_request_penalizes_office_documents_skill(self) -> None:
+        old_codex_home = os.environ.get("CODEX_HOME")
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        os.environ["CODEX_HOME"] = str(Path(temp.name) / ".codex")
+        self.addCleanup(lambda: os.environ.pop("CODEX_HOME", None) if old_codex_home is None else os.environ.__setitem__("CODEX_HOME", old_codex_home))
         record = {
             "name": "documents",
             "invocation_name": "documents:documents",
             "description": "Create and edit docx Word Google Docs documents",
-            "path": "/Users/owenchou/.codex/plugins/cache/openai-primary-runtime/documents/1/skills/documents/SKILL.md",
+            "path": str(
+                Path(os.environ["CODEX_HOME"])
+                / "plugins/cache/openai-primary-runtime/documents/1/skills/documents/SKILL.md"
+            ),
             "source_root": "/tmp",
         }
         scored = skill_inventory.score_skill(

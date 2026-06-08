@@ -17,7 +17,7 @@ Global expected behavior:
 Raw request:
 
 ```text
-为 /Users/owenchou/project 的 README 增加安装步骤和本地开发命令，保持现有风格，并运行可用的文档检查。
+为 ~/project 的 README 增加安装步骤和本地开发命令，保持现有风格，并运行可用的文档检查。
 ```
 
 Expected behavior:

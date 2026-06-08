@@ -99,13 +99,13 @@ When a clarified spec is later supplied, treat it as primary context, rerun `Dem
 2. Run full skill inventory before selecting skills. This is a hard gate.
    - Run `scripts/skill_inventory.py` from this skill directory with the raw user request:
      ```bash
-     python3 /Users/owenchou/.codex/skills/ceo/scripts/skill_inventory.py --request "<raw user request>" --format markdown
+     python3 "${CODEX_HOME:-$HOME/.codex}/skills/ceo/scripts/skill_inventory.py" --request "<raw user request>" --format markdown
      ```
    - The script must scan all configured roots:
-     - `/Users/owenchou/.codex/skills`
-     - `/Users/owenchou/.codex/plugins/cache`
-     - `/Users/owenchou/.agents/skills`
-     - `/Users/owenchou/.claude/skills`
+     - `${CODEX_HOME:-$HOME/.codex}/skills`
+     - `${CODEX_HOME:-$HOME/.codex}/plugins/cache`
+     - `${AGENTS_HOME:-$HOME/.agents}/skills`
+     - `${CLAUDE_HOME:-$HOME/.claude}/skills`
    - It reads only frontmatter `name`, `description`, and path for all `SKILL.md` files; the parser stops at the closing frontmatter marker and does not read full skill bodies during inventory.
    - It uses deterministic weighted lexical recall, not model intuition, embedding search, or a cached index.
    - Default candidate recall is top 10. Complex tasks use top 15. Full `SKILL.md` reads are limited to the top 3-4 finalists.
@@ -147,7 +147,7 @@ When a clarified spec is later supplied, treat it as primary context, rerun `Dem
 
 6. When evaluating or changing this skill, run the automated output evaluator against representative CEO outputs:
    ```bash
-   python3 /Users/owenchou/.codex/skills/ceo/scripts/evaluate_ceo_output.py --request "<raw user request>" path/to/ceo-output.md
+   python3 "${CODEX_HOME:-$HOME/.codex}/skills/ceo/scripts/evaluate_ceo_output.py" --request "<raw user request>" path/to/ceo-output.md
    ```
    The evaluator checks for `Triage`, `Skill Inventory Report`, `Contract Check`, required `Final Prompt` headings, traceability between selected `$skill` invocations and inventory candidates, semantic completeness, and request-aware alignment between the raw request and `Direct Path` / `Clarification Path`. If it fails, treat the CEO output as non-executable until the missing contract element is fixed.
 

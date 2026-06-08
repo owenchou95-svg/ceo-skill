@@ -10,15 +10,15 @@ The current CEO skill is directionally strong: it converts rough user requests i
 
 At review time, the main gap was enforcement. The skill instructions described the intended behavior, but the evaluator could not yet prove whether the demand-triage decision was correct because it did not inspect the original request. Skill retrieval also worked, but the top 3-4 finalists were selected by raw score only, which could crowd out important role coverage on complex tasks.
 
-The user approved P0 + P1. The implementation landed in `bd2f47d Make CEO routing executable under real request pressure`, and the paired SkillOpt synchronization landed in `/Users/owenchou/SkillOpt` commit `47cff0c Align CEO benchmark with office-hours clarification`.
+The user approved P0 + P1. The implementation landed in `bd2f47d Make CEO routing executable under real request pressure`, and the paired SkillOpt synchronization landed in the local SkillOpt acceptance repository commit `47cff0c Align CEO benchmark with office-hours clarification`.
 
 ## Current Baseline
 
-- Repository: `/Users/owenchou/.codex/skills/ceo`
+- Repository: `${CODEX_HOME:-$HOME/.codex}/skills/ceo`
 - Baseline commit: `be79379 Capture CEO skill baseline`
 - Current validation after implementation:
-  - `python3 /Users/owenchou/.codex/skills/.system/skill-creator/scripts/quick_validate.py /Users/owenchou/.codex/skills/ceo` passes.
-  - `python3 -m unittest discover -s /Users/owenchou/.codex/skills/ceo/scripts -p 'test_*.py'` passes 34 tests.
+  - `python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-creator/scripts/quick_validate.py" "${CODEX_HOME:-$HOME/.codex}/skills/ceo"` passes.
+  - `python3 -m unittest discover -s scripts -p 'test_*.py'` passes 34 tests.
   - SkillOpt aggregate eval passed: hard=1.0, soft=0.976859375, n=16.
 
 ## Current Strengths
@@ -117,7 +117,7 @@ Acceptance examples:
 
 ### P0.2 Synchronize SkillOpt With `$office-hours`
 
-Implemented in `/Users/owenchou/SkillOpt` CEO evaluator/data:
+Implemented in the local SkillOpt CEO evaluator/data used for acceptance:
 
 - Replace legacy `$deep-interview --quick` hard gate with `$office-hours`.
 - Preserve the requirement to hand off back to `$ceo`.
@@ -214,18 +214,18 @@ Acceptance:
 
 CEO skill repository:
 
-- `/Users/owenchou/.codex/skills/ceo/SKILL.md`
-- `/Users/owenchou/.codex/skills/ceo/scripts/evaluate_ceo_output.py`
-- `/Users/owenchou/.codex/skills/ceo/scripts/skill_inventory.py`
-- `/Users/owenchou/.codex/skills/ceo/scripts/test_ceo_scripts.py`
-- `/Users/owenchou/.codex/skills/ceo/references/test-fixtures.md`
+- `SKILL.md`
+- `scripts/evaluate_ceo_output.py`
+- `scripts/skill_inventory.py`
+- `scripts/test_ceo_scripts.py`
+- `references/test-fixtures.md`
 
 SkillOpt repository:
 
-- `/Users/owenchou/SkillOpt/skillopt/envs/ceo/evaluator.py`
-- `/Users/owenchou/SkillOpt/data/ceo_prompt_builder/train/items.json`
-- `/Users/owenchou/SkillOpt/data/ceo_prompt_builder/val/items.json`
-- `/Users/owenchou/SkillOpt/data/ceo_prompt_builder/test/items.json`
+- `skillopt/envs/ceo/evaluator.py`
+- `data/ceo_prompt_builder/train/items.json`
+- `data/ceo_prompt_builder/val/items.json`
+- `data/ceo_prompt_builder/test/items.json`
 - Additional SkillOpt config or fixture files only if required by the local evaluator.
 
 ## Verification Plan
@@ -233,16 +233,16 @@ SkillOpt repository:
 Run after implementation:
 
 ```bash
-python3 /Users/owenchou/.codex/skills/.system/skill-creator/scripts/quick_validate.py /Users/owenchou/.codex/skills/ceo
-python3 -m unittest discover -s /Users/owenchou/.codex/skills/ceo/scripts -p 'test_*.py'
-python3 /Users/owenchou/.codex/skills/ceo/scripts/skill_inventory.py --request "做一个浏览器里的番茄钟工具，要有开始暂停、重置、长短休息切换、声音提示和移动端可用。" --format markdown
-python3 /Users/owenchou/.codex/skills/ceo/scripts/evaluate_ceo_output.py --request "我想做一个更高级的个人网站，但还不确定风格、内容和要展示什么，你帮我想清楚。" path/to/generated-output.md --format json
+python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-creator/scripts/quick_validate.py" "${CODEX_HOME:-$HOME/.codex}/skills/ceo"
+python3 -m unittest discover -s scripts -p 'test_*.py'
+python3 scripts/skill_inventory.py --request "做一个浏览器里的番茄钟工具，要有开始暂停、重置、长短休息切换、声音提示和移动端可用。" --format markdown
+python3 scripts/evaluate_ceo_output.py --request "我想做一个更高级的个人网站，但还不确定风格、内容和要展示什么，你帮我想清楚。" path/to/generated-output.md --format json
 ```
 
-SkillOpt verification must be run from `/Users/owenchou/SkillOpt` using the local venv Python because the `skillopt-eval` shebang may point at an old path:
+SkillOpt verification was run from the local SkillOpt acceptance checkout using the local venv Python because the `skillopt-eval` shebang may point at an old path:
 
 ```bash
-/Users/owenchou/SkillOpt/.venv/bin/python --version
+.venv/bin/python --version
 ```
 
 Then run the local SkillOpt CEO eval command appropriate to the current repository state. If the `skillopt-eval` entrypoint remains broken, use the venv Python module/script path rather than the stale shebang wrapper.

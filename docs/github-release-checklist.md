@@ -17,12 +17,12 @@ Use this checklist before publishing the CEO skill repository to GitHub.
 
 ### User-Specific Paths
 
-Current files intentionally document local paths because this is the active installed skill. Before a broad public release, decide whether to:
+Current runtime paths use environment-variable defaults. Before a broad public release:
 
-- [ ] Keep local paths as examples and document that users must adapt them.
-- [ ] Replace `/Users/owenchou/.codex` with `$CODEX_HOME`.
-- [ ] Replace configured skill roots with environment-variable defaults.
-- [ ] Add a short portability note for macOS/Linux path differences.
+- [x] Replace user-specific runtime paths with `${CODEX_HOME:-$HOME/.codex}`.
+- [x] Replace configured skill roots with environment-variable defaults.
+- [x] Add a portability note for `CODEX_HOME`, `AGENTS_HOME`, and `CLAUDE_HOME`.
+- [x] Keep only historical local paths in archived optimization/audit docs when they describe the original local implementation record.
 
 Files likely to need path review:
 
@@ -60,7 +60,7 @@ rg -n "[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}|https?://[^ )>]+" .
 Run:
 
 ```bash
-python3 /Users/owenchou/.codex/skills/.system/skill-creator/scripts/quick_validate.py /Users/owenchou/.codex/skills/ceo
+python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-creator/scripts/quick_validate.py" "${CODEX_HOME:-$HOME/.codex}/skills/ceo"
 python3 -m unittest discover -s scripts -p 'test_*.py'
 ```
 
@@ -91,8 +91,8 @@ Before claiming final optimization completion:
 
 - [x] Synchronize SkillOpt CEO evaluator with `$office-hours`.
 - [x] Confirm no old `$deep-interview --quick` hard gate remains if `$office-hours` is canonical.
-- [x] Run the local SkillOpt CEO evaluation from `/Users/owenchou/SkillOpt`.
-- [ ] If `/Users/owenchou/SkillOpt/.venv/bin/skillopt-eval` has a stale shebang, use the venv Python directly.
+- [x] Run the local SkillOpt CEO evaluation from the acceptance checkout.
+- [x] If `skillopt-eval` has a stale shebang, use the venv Python directly.
 - [x] Record the SkillOpt result in the final implementation report.
 
 ### License
@@ -142,5 +142,4 @@ Ready for broad public release: not yet.
 
 Blocking items for broad release:
 
-- Local paths are still embedded.
 - No GitHub remote is configured.

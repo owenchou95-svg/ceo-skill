@@ -10,7 +10,7 @@ This matrix turned the approved optimization report into concrete tests. The use
 
 The implementation is not accepted unless all gates pass:
 
-1. `quick_validate.py` passes for `/Users/owenchou/.codex/skills/ceo`.
+1. `quick_validate.py` passes for `${CODEX_HOME:-$HOME/.codex}/skills/ceo`.
 2. CEO helper unit tests pass.
 3. Request-aware evaluator rejects wrong triage decisions.
 4. Skill inventory preserves top 10 / top 15 / 3-4 finalist budget while improving finalist role coverage.
@@ -105,10 +105,10 @@ Required SkillOpt acceptance:
   - `## Output Format`
 - Preserve Chinese default output in `SKILL.md`.
 - Preserve inventory root coverage:
-  - `/Users/owenchou/.codex/skills`
-  - `/Users/owenchou/.codex/plugins/cache`
-  - `/Users/owenchou/.agents/skills`
-  - `/Users/owenchou/.claude/skills`
+  - `${CODEX_HOME:-$HOME/.codex}/skills`
+  - `${CODEX_HOME:-$HOME/.codex}/plugins/cache`
+  - `${AGENTS_HOME:-$HOME/.agents}/skills`
+  - `${CLAUDE_HOME:-$HOME/.claude}/skills`
 - Preserve candidate limits:
   - standard: 10
   - complex: 15

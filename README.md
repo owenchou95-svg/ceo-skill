@@ -76,10 +76,10 @@ After a clarified spec is provided, CEO reruns triage and generates an execution
 
 The inventory helper scans configured local roots:
 
-- `/Users/owenchou/.codex/skills`
-- `/Users/owenchou/.codex/plugins/cache`
-- `/Users/owenchou/.agents/skills`
-- `/Users/owenchou/.claude/skills`
+- `${CODEX_HOME:-$HOME/.codex}/skills`
+- `${CODEX_HOME:-$HOME/.codex}/plugins/cache`
+- `${AGENTS_HOME:-$HOME/.agents}/skills`
+- `${CLAUDE_HOME:-$HOME/.claude}/skills`
 
 Run it directly:
 
@@ -119,7 +119,7 @@ The final prompt is considered executable only when it defines:
 Validate the skill structure:
 
 ```bash
-python3 /Users/owenchou/.codex/skills/.system/skill-creator/scripts/quick_validate.py /Users/owenchou/.codex/skills/ceo
+python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-creator/scripts/quick_validate.py" "${CODEX_HOME:-$HOME/.codex}/skills/ceo"
 ```
 
 Run helper tests:
@@ -185,16 +185,16 @@ Implemented from the approved P0/P1 plan:
 Verification evidence:
 
 - CEO local helper tests: `python3 -m unittest discover -s scripts -p 'test_*.py'`
-- Skill creator validation: `quick_validate.py /Users/owenchou/.codex/skills/ceo`
+- Skill creator validation: `quick_validate.py "${CODEX_HOME:-$HOME/.codex}/skills/ceo"`
 - SkillOpt full eval: hard=1.0, soft=0.976859375, n=16
 
 ## Remaining Public Release Gaps
 
-- Path portability review is still needed before broad public release.
+- GitHub remote configuration is still needed before broad public release.
 
 ## Public Release Notes
 
-This skill currently contains local default paths. Before distributing it broadly, consider replacing user-specific paths with configurable environment variables such as `CODEX_HOME`, or document the expected local layout clearly.
+This skill uses portable defaults based on `CODEX_HOME`, `AGENTS_HOME`, and `CLAUDE_HOME`. If unset, they resolve to `$HOME/.codex`, `$HOME/.agents`, and `$HOME/.claude`.
 
 No new runtime dependencies are required for the current helper scripts beyond Python 3.
 

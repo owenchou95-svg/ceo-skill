@@ -21,7 +21,7 @@ Dates use local project context date unless otherwise noted.
 
 ### Verified
 
-- `quick_validate.py` passes for `/Users/owenchou/.codex/skills/ceo`.
+- `quick_validate.py` passes for `${CODEX_HOME:-$HOME/.codex}/skills/ceo`.
 - CEO helper tests pass: `python3 -m unittest discover -s scripts -p 'test_*.py'`.
 
 ### Pending
@@ -38,6 +38,7 @@ Dates use local project context date unless otherwise noted.
 - Expanded helper tests from 17 to 34 cases.
 - Synchronized SkillOpt CEO benchmark/evaluator to `$office-hours` clarification handoff.
 - Passed SkillOpt CEO eval on train/val/test aggregate: hard=1.0, soft=0.976859375, n=16.
+- Replaced user-specific default paths with `CODEX_HOME`, `AGENTS_HOME`, `CLAUDE_HOME`, and `$HOME` fallbacks.
 
 ## 2026-06-08
 
@@ -61,4 +62,4 @@ Dates use local project context date unless otherwise noted.
 ### Notes
 
 - Functional P0/P1 optimization changes are implemented in `bd2f47d`.
-- Broad public release is not ready until path portability and GitHub remote decisions are resolved.
+- Broad public release is not ready until GitHub remote decisions are resolved.

@@ -7,7 +7,7 @@ This packet is the review entry point and implementation record for the CEO skil
 
 ## What Has Been Done
 
-1. Initialized `/Users/owenchou/.codex/skills/ceo` as a standalone git repository.
+1. Initialized `${CODEX_HOME:-$HOME/.codex}/skills/ceo` as a standalone git repository.
 2. Captured the baseline commit:
    - `be79379 Capture CEO skill baseline`
 3. Added the optimization report:
@@ -19,7 +19,7 @@ This packet is the review entry point and implementation record for the CEO skil
 5. Implemented the approved P0 + P1 changes:
    - `bd2f47d Make CEO routing executable under real request pressure`
 6. Synchronized the SkillOpt CEO benchmark/evaluator:
-   - `/Users/owenchou/SkillOpt` commit `47cff0c Align CEO benchmark with office-hours clarification`
+   - local SkillOpt acceptance repository commit `47cff0c Align CEO benchmark with office-hours clarification`
 
 ## What To Review
 
@@ -67,8 +67,8 @@ The original user goal required a report first, user review second, and implemen
 After implementation, these checks passed:
 
 ```bash
-python3 /Users/owenchou/.codex/skills/.system/skill-creator/scripts/quick_validate.py /Users/owenchou/.codex/skills/ceo
-python3 -m unittest discover -s /Users/owenchou/.codex/skills/ceo/scripts -p 'test_*.py'
+python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-creator/scripts/quick_validate.py" "${CODEX_HOME:-$HOME/.codex}/skills/ceo"
+python3 -m unittest discover -s scripts -p 'test_*.py'
 ```
 
 Observed results:

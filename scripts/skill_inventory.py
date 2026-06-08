@@ -6,19 +6,36 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 from pathlib import Path
 from typing import Any
 
 
-DEFAULT_ROOTS = [
-    "/Users/owenchou/.codex/skills",
-    "/Users/owenchou/.codex/plugins/cache",
-    "/Users/owenchou/.agents/skills",
-    "/Users/owenchou/.claude/skills",
-]
+def codex_home() -> Path:
+    return Path(os.environ.get("CODEX_HOME", Path.home() / ".codex")).expanduser()
 
-PLUGIN_CACHE_ROOT = Path("/Users/owenchou/.codex/plugins/cache")
+
+def agents_home() -> Path:
+    return Path(os.environ.get("AGENTS_HOME", Path.home() / ".agents")).expanduser()
+
+
+def claude_home() -> Path:
+    return Path(os.environ.get("CLAUDE_HOME", Path.home() / ".claude")).expanduser()
+
+
+def default_roots() -> list[str]:
+    code_home = codex_home()
+    return [
+        str(code_home / "skills"),
+        str(code_home / "plugins" / "cache"),
+        str(agents_home() / "skills"),
+        str(claude_home() / "skills"),
+    ]
+
+
+def plugin_cache_root() -> Path:
+    return codex_home() / "plugins" / "cache"
 
 GENERIC_QUERY_TOKENS = {
     "about",
@@ -592,7 +609,7 @@ def request_traits(text: str) -> dict[str, bool]:
 def invocation_name_for_path(path: str, name: str) -> str:
     skill_path = Path(path)
     try:
-        relative = skill_path.relative_to(PLUGIN_CACHE_ROOT)
+        relative = skill_path.relative_to(plugin_cache_root())
     except ValueError:
         return name
 
@@ -917,10 +934,11 @@ def score_skill(
                 breakdown["routing_hint"] += boost
                 matched_terms.add(f"routing:{context}")
 
-    if path.startswith("/Users/owenchou/.codex/skills/"):
+    code_home = codex_home()
+    if Path(path).is_relative_to(code_home / "skills"):
         breakdown["source"] += 1
         matched_terms.add("source:codex-skill")
-    if path.startswith("/Users/owenchou/.codex/plugins/cache/") and any(
+    if Path(path).is_relative_to(plugin_cache_root()) and any(
         contains_any(text, TASK_TYPES.get(task_type, [])) for task_type in task_hints
     ):
         breakdown["source"] += 1
@@ -948,7 +966,7 @@ def score_skill(
 
 
 def build_report(args: argparse.Namespace) -> dict[str, Any]:
-    roots = args.roots or DEFAULT_ROOTS
+    roots = args.roots or default_roots()
     root_reports, records = scan_roots(roots)
     unique_records, duplicates = collapse_duplicates(records)
 
