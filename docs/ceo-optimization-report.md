@@ -1,6 +1,6 @@
 # CEO Skill Optimization Report
 
-Status: pending user review before implementation.
+Status: approved, implemented, and SkillOpt-accepted.
 Date: 2026-06-08
 Scope: demand triage and skill retrieval/routing.
 
@@ -8,17 +8,18 @@ Scope: demand triage and skill retrieval/routing.
 
 The current CEO skill is directionally strong: it converts rough user requests into executable agent specifications, requires a `Direct Path` vs `Clarification Path` decision, runs local skill inventory before selecting skills, and validates the output structure with helper scripts.
 
-The main gap is enforcement. The skill instructions describe the intended behavior, but the evaluator cannot yet prove whether the demand-triage decision is correct because it does not inspect the original request. Skill retrieval also works, but the top 3-4 finalists are currently selected by raw score only, which can crowd out important role coverage on complex tasks.
+At review time, the main gap was enforcement. The skill instructions described the intended behavior, but the evaluator could not yet prove whether the demand-triage decision was correct because it did not inspect the original request. Skill retrieval also worked, but the top 3-4 finalists were selected by raw score only, which could crowd out important role coverage on complex tasks.
 
-Recommended plan: implement P0 changes first, then P1 refinements. Do not modify behavior until this report is reviewed and accepted by the user.
+The user approved P0 + P1. The implementation landed in `bd2f47d Make CEO routing executable under real request pressure`, and the paired SkillOpt synchronization landed in `/Users/owenchou/SkillOpt` commit `47cff0c Align CEO benchmark with office-hours clarification`.
 
 ## Current Baseline
 
 - Repository: `/Users/owenchou/.codex/skills/ceo`
 - Baseline commit: `be79379 Capture CEO skill baseline`
-- Current validation:
+- Current validation after implementation:
   - `python3 /Users/owenchou/.codex/skills/.system/skill-creator/scripts/quick_validate.py /Users/owenchou/.codex/skills/ceo` passes.
-  - `python3 -m unittest discover -s /Users/owenchou/.codex/skills/ceo/scripts -p 'test_*.py'` passes 17 tests.
+  - `python3 -m unittest discover -s /Users/owenchou/.codex/skills/ceo/scripts -p 'test_*.py'` passes 33 tests.
+  - SkillOpt aggregate eval passed: hard=1.0, soft=0.9799375, n=16.
 
 ## Current Strengths
 
@@ -31,19 +32,21 @@ Recommended plan: implement P0 changes first, then P1 refinements. Do not modify
 
 ## Key Findings
 
-### 1. Demand Triage Is Specified But Not Enforced
+### 1. Demand Triage Was Specified But Not Enforced
 
-`evaluate_ceo_output.py` checks that a `Triage` section exists, but it does not accept or analyze the raw user request. Therefore it cannot know whether `Direct Path` or `Clarification Path` is correct.
+At review time, `evaluate_ceo_output.py` checked that a `Triage` section existed, but it did not accept or analyze the raw user request. Therefore it could not know whether `Direct Path` or `Clarification Path` was correct.
 
 Observed risk: a vague or high-risk request can be mislabeled as `Direct Path`; if the output still includes all required sections, inventory evidence, and validation phrasing, the evaluator can pass it.
 
-### 2. SkillOpt Is Out Of Sync With The Latest Clarification Route
+Current status: implemented request-aware triage evaluation with deterministic checks for vague requests, high-risk operations, single critical missing inputs, and clarified-spec readiness.
 
-The active CEO skill uses `$office-hours` for clarification. The local SkillOpt CEO evaluator still contains legacy checks for `$deep-interview --quick`.
+### 2. SkillOpt Was Out Of Sync With The Latest Clarification Route
 
-This must be synchronized before final acceptance, because the user's acceptance gate requires SkillOpt testing to pass.
+At review time, the active CEO skill used `$office-hours` for clarification while the local SkillOpt CEO evaluator still contained legacy checks for `$deep-interview --quick`.
 
-### 3. Fixtures Are Behavioral Documentation, Not A Full Executable Suite
+Current status: synchronized. Current SkillOpt CEO evaluator/data require `$office-hours` plus return-to-`$ceo` for clarification-required cases, and no old `$deep-interview --quick` hard gate remains in the active CEO SkillOpt evaluator/data.
+
+### 3. Fixtures Were Behavioral Documentation, Not A Full Executable Suite
 
 `references/test-fixtures.md` defines six important scenarios:
 
@@ -54,17 +57,19 @@ This must be synchronized before final acceptance, because the user's acceptance
 - frontend/browser app
 - clarified spec return flow
 
-The current test suite covers helper behaviors but does not yet convert each fixture into positive and negative executable tests.
+Current status: fixture coverage was expanded into executable positive/negative tests; the helper suite now passes 33 tests.
 
-### 4. Finalist Selection Needs Role Coverage
+### 4. Finalist Selection Needed Role Coverage
 
 `skill_inventory.py` currently shows top 10 candidates by default, top 15 for complex tasks, and limits full `SKILL.md` reads to 3-4 finalists. This matches the requested candidate budget.
 
-The issue is that finalists are selected by raw score only. On complex tasks, similar high-scoring skills can occupy all finalist slots, leaving out a source-access, validation, risk-control, or planning skill that the downstream prompt needs.
+At review time, finalists were selected by raw score only. On complex tasks, similar high-scoring skills could occupy all finalist slots, leaving out a source-access, validation, risk-control, or planning skill that the downstream prompt needs.
 
-### 5. Skill Inventory Reads More Than The Contract Implies
+Current status: implemented coverage-aware finalist selection while preserving the requested top 10 / top 15 / 3-4 finalist budget.
 
-The skill contract says inventory reads only frontmatter metadata. The parser currently reads full `SKILL.md` files before extracting frontmatter. Current scale is still acceptable, but this is unnecessary I/O and should be corrected.
+### 5. Skill Inventory Read More Than The Contract Implied
+
+At review time, the skill contract said inventory reads only frontmatter metadata, but the parser read full `SKILL.md` files before extracting frontmatter. Current status: frontmatter parsing now stops at the closing frontmatter marker.
 
 ## External Patterns To Borrow
 
@@ -84,13 +89,13 @@ Applied to CEO, the pattern is:
 5. Require selected skills to be traceable to inventory evidence.
 6. Validate the route against the original request and expected risk level.
 
-## Proposed Changes
+## Implemented Changes
 
 ## P0 - Required Before Implementation Acceptance
 
 ### P0.1 Add Request-Aware Triage Evaluation
 
-Update `scripts/evaluate_ceo_output.py`:
+Implemented in `scripts/evaluate_ceo_output.py`:
 
 - Add `--request`.
 - Report `triage_expected`, `triage_actual`, and `triage_passed`.
@@ -112,7 +117,7 @@ Acceptance examples:
 
 ### P0.2 Synchronize SkillOpt With `$office-hours`
 
-Update `/Users/owenchou/SkillOpt` CEO evaluator/data as needed:
+Implemented in `/Users/owenchou/SkillOpt` CEO evaluator/data:
 
 - Replace legacy `$deep-interview --quick` hard gate with `$office-hours`.
 - Preserve the requirement to hand off back to `$ceo`.
@@ -126,7 +131,7 @@ Acceptance:
 
 ### P0.3 Convert Fixtures Into Executable Positive/Negative Tests
 
-Update `scripts/test_ceo_scripts.py`:
+Implemented in `scripts/test_ceo_scripts.py`:
 
 - Add positive and negative samples for all six fixtures.
 - Negative cases must fail for the right reason, not only because of missing formatting.
@@ -137,11 +142,11 @@ Acceptance:
 - Fixture 2 direct frontend build prompt fails.
 - Fixture 4 destructive execution prompt fails.
 - Fixture 6 incomplete clarified spec stays in clarification.
-- Existing 17 tests continue to pass.
+- Existing tests continue to pass, expanded to 33 tests.
 
 ### P0.4 Improve Finalist Selection Without Increasing Candidate Budget
 
-Update `scripts/skill_inventory.py`:
+Implemented in `scripts/skill_inventory.py`:
 
 - Preserve default top 10 candidate recall.
 - Preserve complex top 15 candidate recall.
@@ -205,7 +210,7 @@ Acceptance:
 - No body content is needed for inventory.
 - Current inventory speed remains the same or improves.
 
-## Files Expected To Change After Approval
+## Files Changed After Approval
 
 CEO skill repository:
 
@@ -242,12 +247,6 @@ SkillOpt verification must be run from `/Users/owenchou/SkillOpt` using the loca
 
 Then run the local SkillOpt CEO eval command appropriate to the current repository state. If the `skillopt-eval` entrypoint remains broken, use the venv Python module/script path rather than the stale shebang wrapper.
 
-## Decision Required
+## Acceptance Result
 
-Approve one of these paths:
-
-1. Implement P0 only, then run local tests and SkillOpt.
-2. Implement P0 + P1, then run local tests and SkillOpt.
-3. Revise this report before implementation.
-
-Recommended: option 2. It addresses both core goals: better demand judgment and better skill retrieval, while keeping candidate/read limits under control.
+The user approved P0 + P1. Local CEO validation, helper tests, and SkillOpt aggregate evaluation passed after implementation.

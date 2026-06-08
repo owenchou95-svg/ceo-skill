@@ -1,10 +1,10 @@
 # CEO Optimization Test Matrix
 
-Status: pending user review before implementation.
+Status: implemented and accepted.
 Date: 2026-06-08
 Related report: `docs/ceo-optimization-report.md`
 
-This matrix turns the approved optimization report into concrete tests. It is intentionally documentation-only until the user approves implementation.
+This matrix turned the approved optimization report into concrete tests. The user approved P0 + P1, and the implementation now passes the local CEO validation, helper tests, and SkillOpt aggregate eval.
 
 ## Gates
 
@@ -81,7 +81,7 @@ Required cases:
 
 ## SkillOpt Matrix
 
-SkillOpt must be aligned with the installed CEO skill. Current known mismatch: installed CEO routes clarification to `$office-hours`, while the SkillOpt CEO evaluator may still require `$deep-interview --quick`.
+SkillOpt must be aligned with the installed CEO skill. The prior known mismatch has been resolved: installed CEO routes clarification to `$office-hours`, and the SkillOpt CEO evaluator/data now require `$office-hours` plus return to `$ceo` for clarification-required cases.
 
 Required SkillOpt acceptance:
 
@@ -116,9 +116,9 @@ Required SkillOpt acceptance:
 - Preserve selected-skill traceability to inventory candidates.
 - Do not add new dependencies unless separately approved.
 
-## Approval Options
+## Accepted Path
 
-Recommended approval path:
+Approved and implemented path:
 
 1. Implement P0 and P1 from `docs/ceo-optimization-report.md`.
 2. Implement this matrix as tests.
@@ -126,9 +126,3 @@ Recommended approval path:
 4. Synchronize SkillOpt.
 5. Run SkillOpt CEO evaluation.
 6. Commit implementation with a Lore-protocol commit message.
-
-Minimal approval path:
-
-1. Implement P0 only.
-2. Implement DT-01 through DT-06, EV-01 through EV-10, SO-01 through SO-05.
-3. Defer alias-family and stream-frontmatter improvements.
