@@ -132,7 +132,7 @@ python3 -m unittest discover -s scripts -p 'test_*.py'
 Observed:
 
 - `Skill is valid!`
-- `Ran 33 tests ... OK`
+- `Ran 34 tests ... OK`
 - SkillOpt aggregate eval passed: hard=1.0, soft=0.9799375, n=16.
 
 This validates the current skill structure, helper tests, and the SkillOpt acceptance gate for the approved P0/P1 optimization.

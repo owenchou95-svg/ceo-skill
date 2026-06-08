@@ -18,7 +18,7 @@ The user approved P0 + P1. The implementation landed in `bd2f47d Make CEO routin
 - Baseline commit: `be79379 Capture CEO skill baseline`
 - Current validation after implementation:
   - `python3 /Users/owenchou/.codex/skills/.system/skill-creator/scripts/quick_validate.py /Users/owenchou/.codex/skills/ceo` passes.
-  - `python3 -m unittest discover -s /Users/owenchou/.codex/skills/ceo/scripts -p 'test_*.py'` passes 33 tests.
+  - `python3 -m unittest discover -s /Users/owenchou/.codex/skills/ceo/scripts -p 'test_*.py'` passes 34 tests.
   - SkillOpt aggregate eval passed: hard=1.0, soft=0.9799375, n=16.
 
 ## Current Strengths
@@ -57,7 +57,7 @@ Current status: synchronized. Current SkillOpt CEO evaluator/data require `$offi
 - frontend/browser app
 - clarified spec return flow
 
-Current status: fixture coverage was expanded into executable positive/negative tests; the helper suite now passes 33 tests.
+Current status: fixture coverage was expanded into executable positive/negative tests; the helper suite now passes 34 tests.
 
 ### 4. Finalist Selection Needed Role Coverage
 
@@ -142,7 +142,7 @@ Acceptance:
 - Fixture 2 direct frontend build prompt fails.
 - Fixture 4 destructive execution prompt fails.
 - Fixture 6 incomplete clarified spec stays in clarification.
-- Existing tests continue to pass, expanded to 33 tests.
+- Existing tests continue to pass, expanded to 34 tests.
 
 ### P0.4 Improve Finalist Selection Without Increasing Candidate Budget
 

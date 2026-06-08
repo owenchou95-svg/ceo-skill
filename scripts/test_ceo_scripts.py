@@ -449,6 +449,25 @@ class InventoryTests(unittest.TestCase):
             self.assertEqual(15, analysis["candidate_limit"])
             self.assertLessEqual(len(report["finalists_to_read"]), 4)
 
+    def test_low_signal_request_does_not_expand_to_complex_or_source_only_candidates(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            for index in range(20):
+                self.make_skill(
+                    root,
+                    f"generic-{index}",
+                    f"generic-{index}",
+                    "General workflow helper without task-specific terms",
+                )
+            report = skill_inventory.build_report(
+                inventory_args("写一个更好的提示词，用来总结会议纪要", [str(root)])
+            )
+            analysis = report["request_analysis"]
+            self.assertEqual("standard", analysis["complexity"])
+            self.assertEqual(10, analysis["candidate_limit"])
+            self.assertEqual([], report["candidates"])
+            self.assertEqual([], report["finalists_to_read"])
+
     def test_plugin_invocation_name_uses_plugin_prefix(self) -> None:
         path = "/Users/owenchou/.codex/plugins/cache/vendor/sample-plugin/1.2.3/skills/do-thing/SKILL.md"
         self.assertEqual("sample-plugin:do-thing", skill_inventory.invocation_name_for_path(path, "do-thing"))

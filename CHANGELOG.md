@@ -35,7 +35,7 @@ Dates use local project context date unless otherwise noted.
 - Added coverage-aware finalist selection in `scripts/skill_inventory.py`.
 - Added alias-family handling for duplicate/mirrored skill families.
 - Changed frontmatter inventory parsing to stop at the closing frontmatter marker.
-- Expanded helper tests from 17 to 33 cases.
+- Expanded helper tests from 17 to 34 cases.
 - Synchronized SkillOpt CEO benchmark/evaluator to `$office-hours` clarification handoff.
 - Passed SkillOpt CEO eval on train/val/test aggregate: hard=1.0, soft=0.9799375, n=16.
 

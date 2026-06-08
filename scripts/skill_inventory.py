@@ -980,7 +980,15 @@ def build_report(args: argparse.Namespace) -> dict[str, Any]:
         )
         for record in unique_records
     ]
-    scored = [record for record in scored if record["score"] > 0]
+    scored = [
+        record
+        for record in scored
+        if record["score"] > 0
+        and any(
+            record["score_breakdown"].get(key, 0) > 0
+            for key in ("query", "task_type", "capability", "validation", "routing_hint")
+        )
+    ]
     for record in scored:
         record["canonical_family"] = canonical_family_for_record(record)
         record["finalist_role"] = finalist_role(record)
@@ -1010,7 +1018,16 @@ def build_report(args: argparse.Namespace) -> dict[str, Any]:
     scored.sort(key=lambda item: (-item["score"], item["invocation_name"].lower(), item["path"]))
 
     top_five = scored[:5]
-    close_scores = len(top_five) >= 5 and (top_five[0]["score"] - top_five[-1]["score"] <= 3)
+    close_scores = (
+        len(top_five) >= 5
+        and top_five[0]["score"] >= 8
+        and top_five[0]["score"] - top_five[-1]["score"] <= 3
+        and any(
+            item["score_breakdown"].get(key, 0) > 0
+            for item in top_five
+            for key in ("query", "task_type", "capability", "validation", "routing_hint")
+        )
+    )
     complexity_reasons = []
     if len(task_hints) >= 3:
         complexity_reasons.append("three-or-more-task-types")
