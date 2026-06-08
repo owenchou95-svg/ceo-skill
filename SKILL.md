@@ -62,6 +62,7 @@ For `Direct Path`, do not leave assumptions as passive notes. Convert each mater
 Use `Clarification Path` when any of these are true:
 
 - The request is missing two or more of: goal, deliverable, success criteria, scope boundary.
+- The request is missing one critical execution input whose absence would force the agent to invent the target, authority, or safe boundary, such as a PR/repo target, production approval/environment/rollback, legal jurisdiction, or financial risk profile.
 - The user says they are unsure, asks to figure something out, says not to assume, or signals that the requirements are still vague.
 - Multiple materially different routes are plausible and choosing one would shape the final prompt.
 - The task involves high-risk or irreversible work and the user has not supplied the boundary or authority needed to proceed.
@@ -83,7 +84,7 @@ For `Clarification Path`, route strongly to `$office-hours`. Do not invent a com
 - CEO Handoff Summary:
 ```
 
-When a clarified spec is later supplied, treat it as primary context, rerun `Demand Triage`, and only produce the final execution prompt if all material gaps are resolved. If the clarified spec still leaves a material route choice open, stay in `Clarification Path` and ask only for that choice.
+When a clarified spec is later supplied, treat it as primary context, rerun `Demand Triage`, and only produce the final execution prompt if all material gaps are resolved. A clarified spec is ready only when the required fields are present, no material field is empty or `TBD`, `Open Questions` says `None blocking` or equivalent, `Decision Boundaries` do not contain unresolved route choices, and acceptance criteria are concrete. If the clarified spec still leaves a material route choice open, stay in `Clarification Path` and ask only for that choice.
 
 ## Workflow
 
@@ -105,9 +106,12 @@ When a clarified spec is later supplied, treat it as primary context, rerun `Dem
      - `/Users/owenchou/.codex/plugins/cache`
      - `/Users/owenchou/.agents/skills`
      - `/Users/owenchou/.claude/skills`
-   - It reads only frontmatter `name`, `description`, and path for all `SKILL.md` files.
+   - It reads only frontmatter `name`, `description`, and path for all `SKILL.md` files; the parser stops at the closing frontmatter marker and does not read full skill bodies during inventory.
    - It uses deterministic weighted lexical recall, not model intuition, embedding search, or a cached index.
    - Default candidate recall is top 10. Complex tasks use top 15. Full `SKILL.md` reads are limited to the top 3-4 finalists.
+   - Finalists are selected with coverage-aware role diversity, not raw score alone. Prefer a compact set that covers primary execution, source/access, validation/evidence, and risk/planning/clarification when those roles are present.
+   - Alias families may be collapsed for ranking so mirrored skills or cached plugin versions do not crowd out other roles. Final prompts must still use the exact inventory-provided `invocation_name`.
+   - For clear, low-risk repository Markdown/README edits where inventory finds only broad QA/diagnosis/CI-adjacent skills, the report may state `No special skill recommended` and skip full skill reads. This is preferable to forcing weak matches into the final prompt.
    - Include the resulting `Skill Inventory Report` in the response, including each candidate's exact `invocation_name` and any `Out-of-scope task hints ignored/penalized` line when present. If the script cannot run or scans zero files, do not produce a final execution prompt; report the blocker or route to clarification.
    - If the user explicitly says no special skill is needed, still run inventory and state that no special skill was selected after evidence.
 
@@ -143,9 +147,9 @@ When a clarified spec is later supplied, treat it as primary context, rerun `Dem
 
 6. When evaluating or changing this skill, run the automated output evaluator against representative CEO outputs:
    ```bash
-   python3 /Users/owenchou/.codex/skills/ceo/scripts/evaluate_ceo_output.py path/to/ceo-output.md
+   python3 /Users/owenchou/.codex/skills/ceo/scripts/evaluate_ceo_output.py --request "<raw user request>" path/to/ceo-output.md
    ```
-   The evaluator checks for `Triage`, `Skill Inventory Report`, `Contract Check`, required `Final Prompt` headings, and traceability between selected `$skill` invocations and inventory candidates. If it fails, treat the CEO output as non-executable until the missing contract element is fixed.
+   The evaluator checks for `Triage`, `Skill Inventory Report`, `Contract Check`, required `Final Prompt` headings, traceability between selected `$skill` invocations and inventory candidates, semantic completeness, and request-aware alignment between the raw request and `Direct Path` / `Clarification Path`. If it fails, treat the CEO output as non-executable until the missing contract element is fixed.
 
 ## Output Format
 

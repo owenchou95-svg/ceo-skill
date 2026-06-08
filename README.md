@@ -11,6 +11,7 @@ It is not a prompt-polishing helper. Its job is to decide whether a request is r
 - Requires a full local skill inventory before selecting skills.
 - Uses deterministic local metadata recall instead of model memory for skill discovery.
 - Keeps default candidate recall at 10 skills, complex recall at 15 skills, and final full-read candidates at 3-4 skills.
+- Selects finalists with role coverage so source/access and validation skills are not crowded out by near-duplicate high scorers.
 - Requires selected skills/plugins to be traceable to the inventory report.
 - Outputs an executable prompt with fixed sections:
   - `## Role`
@@ -130,7 +131,7 @@ python3 -m unittest discover -s scripts -p 'test_*.py'
 Evaluate a generated CEO output:
 
 ```bash
-python3 scripts/evaluate_ceo_output.py path/to/ceo-output.md
+python3 scripts/evaluate_ceo_output.py --request "<raw user request>" path/to/ceo-output.md
 ```
 
 ## Repository Layout
@@ -156,7 +157,7 @@ python3 scripts/evaluate_ceo_output.py path/to/ceo-output.md
 
 ## Current Optimization Status
 
-The repository includes a reviewed optimization packet, but the implementation changes are intentionally not applied yet.
+The repository includes a reviewed optimization packet. The approved P0/P1 implementation has landed request-aware evaluator checks, coverage-aware inventory finalist selection, and `$office-hours` synchronization in SkillOpt. Final SkillOpt acceptance passed on the aggregate train/val/test eval.
 
 Review entry point:
 
@@ -170,7 +171,7 @@ Acceptance matrix:
 
 - `docs/ceo-optimization-test-matrix.md`
 
-Planned improvements after approval:
+Implemented from the approved P0/P1 plan:
 
 - request-aware demand-triage evaluation
 - executable positive/negative fixture tests
@@ -181,12 +182,15 @@ Planned improvements after approval:
 - alias/canonical-family handling for duplicate skill families
 - stream-based frontmatter parsing
 
-## Known Gaps Before The Planned Upgrade
+Verification evidence:
 
-- The current evaluator checks structure and traceability, but does not yet verify triage correctness against the original raw request.
-- SkillOpt may still contain legacy `$deep-interview --quick` checks and must be synchronized to `$office-hours`.
-- Fixture documentation is stronger than the current executable fixture test coverage.
-- Inventory finalists are still selected by raw score rather than role coverage.
+- CEO local helper tests: `python3 -m unittest discover -s scripts -p 'test_*.py'`
+- Skill creator validation: `quick_validate.py /Users/owenchou/.codex/skills/ceo`
+- SkillOpt full eval: hard=1.0, soft=0.9799375, n=16
+
+## Remaining Public Release Gaps
+
+- License selection and path portability review are still needed before broad public release.
 
 ## Public Release Notes
 

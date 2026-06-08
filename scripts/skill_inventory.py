@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 from pathlib import Path
@@ -266,7 +267,7 @@ ROUTING_HINT_BOOSTS = {
         "setup-deploy": 4,
     },
     "document": {"documents": 8, "pdf": 4},
-    "repo-doc": {"devex-review": 4, "health": 3, "qa": 3},
+    "repo-doc": {"devex-review": 2, "health": 1},
     "spreadsheet": {"spreadsheets": 8},
     "presentation": {"presentations": 8, "canva-branded-presentation": 6},
     "pdf": {"pdf": 8, "latex-compile": 5},
@@ -446,22 +447,21 @@ def contains_any(text: str, terms: list[str]) -> list[str]:
 
 def parse_frontmatter(path: Path) -> dict[str, str]:
     try:
-        lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+        with path.open("r", encoding="utf-8", errors="replace") as handle:
+            first = handle.readline()
+            if first.strip() != "---":
+                return {}
+            lines = []
+            for line in handle:
+                if line.strip() == "---":
+                    break
+                lines.append(line.rstrip("\n"))
+            else:
+                return {}
     except OSError:
         return {}
 
-    if not lines or lines[0].strip() != "---":
-        return {}
-
-    end = None
-    for index, line in enumerate(lines[1:], start=1):
-        if line.strip() == "---":
-            end = index
-            break
-    if end is None:
-        return {}
-
-    fm = lines[1:end]
+    fm = lines
     data: dict[str, str] = {}
     i = 0
     key_re = re.compile(r"^([A-Za-z0-9_-]+):\s*(.*)$")
@@ -609,7 +609,43 @@ def invocation_name_for_path(path: str, name: str) -> str:
 
     if not plugin:
         return name
+    if name == plugin or name.startswith(f"{plugin}:"):
+        return name
     return f"{plugin}:{name}"
+
+
+def canonical_family_for_record(record: dict[str, Any]) -> str:
+    invocation = normalize(record.get("invocation_name") or record["name"])
+    name = normalize(record["name"])
+    path = record.get("path", "")
+    base = invocation.split(":")[-1]
+    if base.startswith("gstack-"):
+        base = base.removeprefix("gstack-")
+    path_base = Path(path).parent.name
+    if path_base.startswith("gstack-"):
+        path_base = path_base.removeprefix("gstack-")
+    description = normalize(record.get("description", ""))
+    digest = hashlib.sha1(description.encode("utf-8")).hexdigest()[:10] if description else ""
+    if digest:
+        return f"{path_base or base}:{digest}"
+    return path_base or base or name or invocation
+
+
+def finalist_role(candidate: dict[str, Any]) -> str:
+    terms = set(candidate.get("matched_terms", []))
+    invocation = normalize(candidate.get("invocation_name", ""))
+    name = normalize(candidate.get("name", ""))
+    if any(term.startswith("validation:") for term in terms) or any(
+        key in invocation or key == name for key in ["playwright", "qa", "test", "health", "browse", "browser", "chrome"]
+    ):
+        return "validation"
+    if any(key in invocation or key == name for key in ["github", "documents", "spreadsheets", "presentations", "browser:control", "chrome:control"]):
+        return "source-access"
+    if any(term.startswith("routing:ideation") for term in terms) or any(
+        key in invocation or key == name for key in ["office-hours", "plan", "ralplan", "security", "deploy", "cso"]
+    ):
+        return "risk-planning"
+    return "primary"
 
 
 def detect_map(request: str, mapping: dict[str, Any], request_key: str | None = None) -> list[str]:
@@ -671,6 +707,92 @@ def collapse_duplicates(records: list[dict[str, Any]]) -> tuple[list[dict[str, A
                 }
             )
     return unique, duplicates
+
+
+def collapse_alias_families(candidates: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    by_family: dict[str, list[dict[str, Any]]] = {}
+    for candidate in candidates:
+        family = candidate.get("canonical_family") or canonical_family_for_record(candidate)
+        candidate["canonical_family"] = family
+        by_family.setdefault(family, []).append(candidate)
+
+    collapsed = []
+    aliases = []
+    for family in sorted(by_family):
+        items = sorted(
+            by_family[family],
+            key=lambda item: (-item["score"], item["invocation_name"].lower(), item["path"]),
+        )
+        winner = items[0]
+        if len(items) > 1:
+            alias_names = [item["invocation_name"] for item in items[1:]]
+            winner["aliases"] = alias_names
+            winner["matched_terms"] = sorted(set(winner.get("matched_terms", []) + ["alias-family:" + family]))
+            aliases.append(
+                {
+                    "canonical_family": family,
+                    "winner": winner["invocation_name"],
+                    "aliases": alias_names,
+                    "paths": [item["path"] for item in items],
+                }
+            )
+        collapsed.append(winner)
+    collapsed.sort(key=lambda item: (-item["score"], item["invocation_name"].lower(), item["path"]))
+    return collapsed, aliases
+
+
+def select_coverage_aware_finalists(candidates: list[dict[str, Any]], limit: int) -> list[dict[str, Any]]:
+    if limit <= 0:
+        return []
+    selected: list[dict[str, Any]] = []
+    seen_families: set[str] = set()
+    preferred_roles = ["primary", "source-access", "validation", "risk-planning"]
+
+    for role in preferred_roles:
+        if len(selected) >= limit:
+            break
+        for candidate in candidates:
+            family = candidate.get("canonical_family") or canonical_family_for_record(candidate)
+            if candidate.get("finalist_role") != role or family in seen_families:
+                continue
+            selected.append(candidate)
+            seen_families.add(family)
+            break
+
+    for candidate in candidates:
+        if len(selected) >= limit:
+            break
+        family = candidate.get("canonical_family") or canonical_family_for_record(candidate)
+        if family in seen_families:
+            continue
+        selected.append(candidate)
+        seen_families.add(family)
+
+    return selected
+
+
+def should_recommend_no_special_skill(
+    traits: dict[str, bool],
+    task_hints: list[str],
+    capability_hints: list[str],
+    candidates: list[dict[str, Any]],
+) -> bool:
+    if not traits.get("markdown_doc") or "repo-doc" not in task_hints:
+        return False
+    if any(capability not in {"edit", "test", "inspect"} for capability in capability_hints):
+        return False
+    primary_candidates = [
+        candidate
+        for candidate in candidates
+        if candidate.get("finalist_role") == "primary"
+        and (
+            "task:repo-doc" in candidate.get("matched_terms", [])
+            or "query:readme" in candidate.get("matched_terms", [])
+            or "query:markdown" in candidate.get("matched_terms", [])
+            or "readme" in normalize(candidate.get("description", ""))
+        )
+    ]
+    return not primary_candidates
 
 
 def score_skill(
@@ -859,7 +981,33 @@ def build_report(args: argparse.Namespace) -> dict[str, Any]:
         for record in unique_records
     ]
     scored = [record for record in scored if record["score"] > 0]
-    scored.sort(key=lambda item: (-item["score"], item["name"].lower(), item["path"]))
+    for record in scored:
+        record["canonical_family"] = canonical_family_for_record(record)
+        record["finalist_role"] = finalist_role(record)
+        if traits.get("markdown_doc") and "repo-doc" in task_hints and record["finalist_role"] == "validation":
+            invocation = normalize(record["invocation_name"])
+            broad_validation = [
+                "qa",
+                "qa-only",
+                "diagnose",
+                "tdd",
+                "gh-fix-ci",
+                "browser",
+                "browse",
+                "benchmark",
+                "design-review",
+                "playwright",
+            ]
+            if any(invocation == item or invocation.endswith(f":{item}") or item in invocation for item in broad_validation):
+                record["score_breakdown"]["out_of_scope_penalty"] -= 16
+                record["matched_terms"] = sorted(set(record["matched_terms"] + ["mismatch:repo-doc-validation-primary"]))
+                record["score"] = sum(record["score_breakdown"].values())
+            elif invocation == "grill-with-docs":
+                record["score_breakdown"]["out_of_scope_penalty"] -= 10
+                record["matched_terms"] = sorted(set(record["matched_terms"] + ["mismatch:repo-doc-interview-overhead"]))
+                record["score"] = sum(record["score_breakdown"].values())
+    scored, alias_families = collapse_alias_families(scored)
+    scored.sort(key=lambda item: (-item["score"], item["invocation_name"].lower(), item["path"]))
 
     top_five = scored[:5]
     close_scores = len(top_five) >= 5 and (top_five[0]["score"] - top_five[-1]["score"] <= 3)
@@ -876,7 +1024,8 @@ def build_report(args: argparse.Namespace) -> dict[str, Any]:
 
     candidate_limit = args.complex_candidate_limit if complexity == "complex" else args.candidate_limit
     candidates = scored[:candidate_limit]
-    finalists = candidates[: max(0, min(args.finalist_limit, len(candidates)))]
+    no_special_skill = should_recommend_no_special_skill(traits, task_hints, capability_hints, candidates)
+    finalists = [] if no_special_skill else select_coverage_aware_finalists(candidates, max(0, min(args.finalist_limit, len(candidates))))
 
     ranked_candidates = []
     for index, candidate in enumerate(candidates, start=1):
@@ -891,6 +1040,9 @@ def build_report(args: argparse.Namespace) -> dict[str, Any]:
                 "matched_terms": candidate["matched_terms"],
                 "reason": candidate["reason"],
                 "description": candidate.get("description", ""),
+                "canonical_family": candidate.get("canonical_family", ""),
+                "finalist_role": candidate.get("finalist_role", ""),
+                "aliases": candidate.get("aliases", []),
             }
         )
 
@@ -900,7 +1052,9 @@ def build_report(args: argparse.Namespace) -> dict[str, Any]:
             "name": candidate["name"],
             "invocation_name": candidate["invocation_name"],
             "path": candidate["path"],
-            "why_read_full": "Top deterministic frontmatter candidate",
+            "why_read_full": f"Coverage-aware finalist role: {candidate.get('finalist_role', 'primary')}",
+            "finalist_role": candidate.get("finalist_role", ""),
+            "canonical_family": candidate.get("canonical_family", ""),
         }
         for index, candidate in enumerate(finalists, start=1)
     ]
@@ -913,6 +1067,8 @@ def build_report(args: argparse.Namespace) -> dict[str, Any]:
             "roots_covered": root_reports,
             "duplicates_found": len(duplicates),
             "duplicate_names": duplicates[:25],
+            "alias_families_found": len(alias_families),
+            "alias_families": alias_families[:25],
         },
         "request_analysis": {
             "raw_request": args.request,
@@ -929,7 +1085,9 @@ def build_report(args: argparse.Namespace) -> dict[str, Any]:
             "complexity_reasons": complexity_reasons,
             "candidate_limit": candidate_limit,
             "finalist_limit": args.finalist_limit,
+            "no_special_skill_recommended": no_special_skill,
             "scoring": "deterministic weighted lexical frontmatter recall",
+            "finalist_selection": "coverage-aware role and alias-family selection",
         },
         "candidates": ranked_candidates,
         "finalists_to_read": finalists_to_read,
@@ -943,6 +1101,7 @@ def print_markdown(report: dict[str, Any]) -> None:
     print(f"- Scanned files: {inventory['scanned_files']}")
     print(f"- Unique skills: {inventory['unique_skills']}")
     print(f"- Duplicates found: {inventory['duplicates_found']}")
+    print(f"- Alias families found: {inventory['alias_families_found']}")
     print("- Roots covered:")
     for root in inventory["roots_covered"]:
         status = "yes" if root["exists"] else "missing"
@@ -955,6 +1114,8 @@ def print_markdown(report: dict[str, Any]) -> None:
     print(f"- Task type hints: {', '.join(analysis['task_type_hints']) or 'none'}")
     print(f"- Capability hints: {', '.join(analysis['capability_hints']) or 'none'}")
     print(f"- Validation hints: {', '.join(analysis['validation_hints']) or 'none'}")
+    if analysis.get("no_special_skill_recommended"):
+        print("- No special skill recommended: yes (clear low-risk repository markdown/docs edit; use ordinary file inspection and available project checks)")
     if analysis["out_of_scope_request"]:
         print(f"- Out-of-scope task hints ignored/penalized: {', '.join(analysis['out_of_scope_task_type_hints']) or 'none'}")
         print(f"- Out-of-scope capability hints ignored/penalized: {', '.join(analysis['out_of_scope_capability_hints']) or 'none'}")
@@ -968,11 +1129,20 @@ def print_markdown(report: dict[str, Any]) -> None:
         )
         print(f"   - Breakdown: {json.dumps(candidate['score_breakdown'], ensure_ascii=False)}")
         print(f"   - Matched: {', '.join(candidate['matched_terms']) or 'none'}")
+        print(f"   - Role: {candidate.get('finalist_role') or 'primary'}")
+        if candidate.get("aliases"):
+            print(f"   - Aliases: {', '.join(candidate['aliases'])}")
     print("\n### Finalists To Read")
+    if analysis.get("no_special_skill_recommended"):
+        print("- None. No full `SKILL.md` read needed unless local evidence reveals a specific documentation skill.")
+        return
     if not report["finalists_to_read"]:
         print("- None.")
     for finalist in report["finalists_to_read"]:
-        print(f"{finalist['rank']}. `${finalist['invocation_name']}` (`{finalist['name']}`) - {finalist['path']}")
+        print(
+            f"{finalist['rank']}. `${finalist['invocation_name']}` (`{finalist['name']}`) "
+            f"[{finalist.get('finalist_role') or 'primary'}] - {finalist['path']}"
+        )
 
 
 def parse_args() -> argparse.Namespace:

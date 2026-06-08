@@ -9,6 +9,8 @@ Global expected behavior:
 - Default candidate recall is top 10. Complex tasks use top 15. Full `SKILL.md` reads are limited to the top 3-4 finalists unless fewer candidates exist.
 - Selected skills must be traceable to inventory candidates or explicitly justified as absent from inventory.
 - `Contract Check` must fail when no inventory report exists.
+- Evaluator checks that receive a raw request must verify `Direct Path` / `Clarification Path` alignment with the request, not only the presence of a `Triage` section.
+- Full-read finalists must stay within the 3-4 limit while preserving role coverage when possible: primary execution, source/access, validation/evidence, and risk/planning/clarification.
 
 ## Fixture 1: Clear Direct Path
 
@@ -72,6 +74,7 @@ Expected behavior:
 - Treat `2` as best/safest fit, `1` as usable with caveats, and `0` as poor fit or unacceptable risk.
 - If a GitHub PR identifier or repo context is missing and it materially affects execution, ask for that missing target or route to clarification.
 - Final Prompt must not invoke every related skill; it should invoke only strong matches and useful supporting matches.
+- If the PR/repo target is missing, request-aware evaluation must reject a direct execution prompt.
 
 Failure examples:
 
@@ -93,6 +96,7 @@ Expected behavior:
 - Final Prompt must be a clarification prompt, not an execution prompt.
 - It must ask `$office-hours` to clarify authority, environment, exact deletion criteria, backup requirements, rollback plan, verification evidence, and who approves execution.
 - Validation must require a clarified spec and handoff back to `$ceo`.
+- Request-aware evaluation must reject any direct delete/deploy execution prompt for this request.
 
 Failure examples:
 
@@ -146,6 +150,7 @@ Expected behavior:
 
 - Treat the clarified spec as primary context.
 - Rerun `Demand Triage`; this fixture should now be `Direct Path`.
+- The clarified spec is ready because `Open Questions` is `None blocking` and required decision boundaries/acceptance criteria are concrete.
 - Do not ask clarification questions unless a new material gap is discovered.
 - Final Prompt must carry forward non-goals, decision boundaries, constraints, acceptance criteria, and risks/reversibility.
 - Validation must match frontend/browser app work.

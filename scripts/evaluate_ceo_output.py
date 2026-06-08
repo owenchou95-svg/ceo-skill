@@ -144,6 +144,119 @@ VALIDATION_EVIDENCE_TERMS = [
     "产物",
 ]
 
+TRIAGE_DIRECT = "Direct Path"
+TRIAGE_CLARIFICATION = "Clarification Path"
+CANONICAL_CLARIFICATION_SKILL = "office-hours"
+
+CLARIFIED_SPEC_FIELDS = [
+    "Goal",
+    "Deliverables",
+    "In Scope",
+    "Out of Scope / Non-goals",
+    "Inputs / Context",
+    "Decision Boundaries",
+    "Constraints",
+    "Acceptance Criteria",
+    "Risks and Reversibility",
+    "Open Questions",
+    "CEO Handoff Summary",
+]
+
+VAGUE_REQUEST_TERMS = [
+    "not sure",
+    "uncertain",
+    "still vague",
+    "figure out",
+    "think through",
+    "don't assume",
+    "do not assume",
+    "help me decide",
+    "不确定",
+    "还不确定",
+    "还不清楚",
+    "想清楚",
+    "帮我想",
+    "不要假设",
+    "别假设",
+    "模糊",
+]
+
+HIGH_RISK_REQUEST_TERMS = [
+    "production",
+    "database",
+    "delete",
+    "drop",
+    "deploy",
+    "payment",
+    "security",
+    "legal advice",
+    "investment advice",
+    "生产",
+    "数据库",
+    "删除",
+    "清掉",
+    "部署",
+    "上线",
+    "支付",
+    "安全",
+    "法律意见",
+    "投资建议",
+]
+
+HIGH_RISK_BOUNDARY_TERMS = [
+    "authority",
+    "approval",
+    "approved",
+    "environment",
+    "backup",
+    "rollback",
+    "deletion criteria",
+    "target environment",
+    "授权",
+    "批准",
+    "审批",
+    "环境",
+    "备份",
+    "回滚",
+    "删除标准",
+    "目标环境",
+]
+
+EXECUTION_TERMS = [
+    "build",
+    "implement",
+    "create",
+    "scaffold",
+    "write code",
+    "deploy",
+    "delete",
+    "drop",
+    "ship",
+    "构建",
+    "实现",
+    "创建",
+    "写代码",
+    "部署",
+    "删除",
+    "清掉",
+    "上线",
+]
+
+NEGATION_TERMS = [
+    "do not",
+    "don't",
+    "dont",
+    "not",
+    "not yet",
+    "avoid",
+    "without",
+    "禁止",
+    "不要",
+    "不做",
+    "无需",
+    "避免",
+]
+
 GENERIC_VALIDATION_RE = re.compile(
     r"^\s*(?:check|verify|test|run checks?|检查|验证|测试)(?:\s+(?:it|the result|结果))?\.?\s*$",
     re.IGNORECASE,
@@ -154,6 +267,8 @@ GENERIC_FIELD_VALUE_RE = re.compile(
     r"same as above|as requested|to be decided|检查|验证|待定|无|未知|按需求|按照要求)\.?\s*$",
     re.IGNORECASE,
 )
+
+FIELD_LINE_RE = re.compile(r"^\s*[-*]\s*([^:：]+)\s*[:：]\s*(.*)$")
 
 REQUIREMENT_FIELD_LABELS = {
     "requirements_inputs": re.compile(r"^\s*[-*]\s*inputs?\s*:\s*(.+)$|^\s*[-*]\s*输入\s*[:：]\s*(.+)$", re.IGNORECASE),
@@ -255,6 +370,191 @@ def final_prompt_section_text(final_prompt: str, section: str) -> str:
             end = index
             break
     return "\n".join(lines[start:end]).strip()
+
+
+def contains_any_phrase(text: str, terms: list[str]) -> list[str]:
+    text_l = text.lower()
+    matches = []
+    for term in terms:
+        term_l = term.lower()
+        if not term_l:
+            continue
+        if term_l.isascii() and re.fullmatch(r"[a-z0-9 -]+", term_l):
+            pattern = rf"(?<![a-z0-9]){re.escape(term_l)}(?![a-z0-9])"
+            if re.search(pattern, text_l):
+                matches.append(term)
+        elif term_l in text_l:
+            matches.append(term)
+    return matches
+
+
+def has_unnegated_phrase(text: str, phrase: str) -> bool:
+    text_l = text.lower()
+    phrase_l = phrase.lower()
+    start = 0
+    while True:
+        index = text_l.find(phrase_l, start)
+        if index < 0:
+            return False
+        prefix = text_l[max(0, index - 36):index]
+        if not any(term in prefix for term in NEGATION_TERMS):
+            return True
+        start = index + len(phrase_l)
+
+
+def has_any_unnegated_phrase(text: str, phrases: list[str]) -> bool:
+    return any(has_unnegated_phrase(text, phrase) for phrase in phrases)
+
+
+def has_unnegated_execution_action(text: str) -> bool:
+    """Detect direct execution actions while allowing clarification about those actions."""
+    text_l = text.lower()
+    for phrase in EXECUTION_TERMS:
+        phrase_l = phrase.lower()
+        start = 0
+        while True:
+            if phrase_l.isascii():
+                match = re.search(rf"(?<![a-z0-9]){re.escape(phrase_l)}(?![a-z0-9])", text_l[start:])
+                if not match:
+                    break
+                index = start + match.start()
+                match_end = start + match.end()
+            else:
+                index = text_l.find(phrase_l, start)
+                if index < 0:
+                    break
+                match_end = index + len(phrase_l)
+            if index < 0:
+                break
+            prefix = text_l[max(0, index - 96):index]
+            suffix = text_l[match_end: match_end + 32]
+            if any(term in prefix for term in NEGATION_TERMS):
+                start = match_end
+                continue
+            if any(term in prefix for term in ["out of scope", "non-goals", "not in scope", "不在范围", "范围外", "非目标"]):
+                start = match_end
+                continue
+            if any(term in prefix for term in ["clarify", "clarifies", "requirements for", "澄清", "明确"]):
+                start = match_end
+                continue
+            if re.match(r"\s*(?:prompt|request|boundary|criteria|plan|context|提示词|请求|边界|标准|计划)", suffix):
+                start = match_end
+                continue
+            return True
+    return False
+
+
+def actual_triage(text: str) -> str | None:
+    triage_text = section_text(text, "Triage")
+    if re.search(r"\bclarification\s+path\b|澄清", triage_text, re.IGNORECASE):
+        return TRIAGE_CLARIFICATION
+    if re.search(r"\bdirect\s+path\b|直接", triage_text, re.IGNORECASE):
+        return TRIAGE_DIRECT
+    return None
+
+
+def parse_clarified_spec(request: str) -> dict[str, str]:
+    fields: dict[str, str] = {}
+    for line in request.splitlines():
+        match = FIELD_LINE_RE.match(line)
+        if not match:
+            continue
+        label = normalize_heading(match.group(1))
+        value = match.group(2).strip()
+        for field in CLARIFIED_SPEC_FIELDS:
+            if label.lower() == field.lower():
+                fields[field] = value
+                break
+    return fields
+
+
+def clarified_spec_readiness(request: str) -> dict[str, Any]:
+    if "Clarified Spec" not in request:
+        return {
+            "present": False,
+            "ready": None,
+            "missing_fields": [],
+            "blocking_fields": [],
+            "reason": "no clarified spec supplied",
+        }
+
+    fields = parse_clarified_spec(request)
+    missing = [field for field in CLARIFIED_SPEC_FIELDS if field not in fields]
+    blocking = []
+    for field, value in fields.items():
+        value_l = value.lower().strip()
+        if not value_l or GENERIC_FIELD_VALUE_RE.match(value_l):
+            blocking.append(field)
+            continue
+        if field != "Open Questions" and any(term in value_l for term in ["unknown", "blocking", "待定", "未知", "未定"]):
+            blocking.append(field)
+        if field == "Open Questions" and not re.search(r"\bnone\s+blocking\b|\bno\s+blocking\b|无阻塞|没有阻塞|none\b", value_l, re.IGNORECASE):
+            blocking.append(field)
+        if field == "Decision Boundaries" and any(term in value_l for term in ["choose", "decide later", "待定", "未定", "用户选择"]):
+            blocking.append(field)
+
+    ready = not missing and not blocking
+    reason = "ready" if ready else "missing or blocking clarified spec fields"
+    return {
+        "present": True,
+        "ready": ready,
+        "missing_fields": missing,
+        "blocking_fields": sorted(set(blocking)),
+        "reason": reason,
+    }
+
+
+def expected_triage_for_request(request: str | None) -> dict[str, Any]:
+    if not request:
+        return {
+            "expected": None,
+            "requires_clarification": False,
+            "reasons": [],
+            "clarified_spec_readiness": clarified_spec_readiness(""),
+        }
+
+    readiness = clarified_spec_readiness(request)
+    if readiness["present"]:
+        if readiness["ready"]:
+            return {
+                "expected": TRIAGE_DIRECT,
+                "requires_clarification": False,
+                "reasons": ["clarified-spec-ready"],
+                "clarified_spec_readiness": readiness,
+            }
+        return {
+            "expected": TRIAGE_CLARIFICATION,
+            "requires_clarification": True,
+            "reasons": ["clarified-spec-not-ready"],
+            "clarified_spec_readiness": readiness,
+        }
+
+    reasons = []
+    vague_hits = contains_any_phrase(request, VAGUE_REQUEST_TERMS)
+    if vague_hits:
+        reasons.append("vague-intent:" + ",".join(vague_hits[:4]))
+
+    high_risk_hits = contains_any_phrase(request, HIGH_RISK_REQUEST_TERMS)
+    if high_risk_hits:
+        boundary_hits = contains_any_phrase(request, HIGH_RISK_BOUNDARY_TERMS)
+        if len(boundary_hits) < 2:
+            reasons.append("high-risk-missing-boundary:" + ",".join(high_risk_hits[:4]))
+
+    request_l = request.lower()
+    if re.search(r"\bpr\b|pull request|拉取请求", request_l) and not re.search(r"https?://|#\d+|/pull/\d+|\brepo\b|repository|仓库", request_l):
+        reasons.append("missing-critical-input:pr-or-repo")
+    if contains_any_phrase(request, ["legal", "法律", "case brief", "法律意见"]) and not contains_any_phrase(request, ["jurisdiction", "管辖", "法域", "china", "us", "美国", "中国"]):
+        reasons.append("missing-critical-input:jurisdiction")
+    if contains_any_phrase(request, ["investment", "portfolio", "投资", "理财"]) and not contains_any_phrase(request, ["risk profile", "risk tolerance", "风险偏好", "风险承受"]):
+        reasons.append("missing-critical-input:risk-profile")
+
+    expected = TRIAGE_CLARIFICATION if reasons else TRIAGE_DIRECT
+    return {
+        "expected": expected,
+        "requires_clarification": bool(reasons),
+        "reasons": reasons,
+        "clarified_spec_readiness": readiness,
+    }
 
 
 def inventory_candidate_names(inventory_text: str) -> set[str]:
@@ -439,7 +739,51 @@ def semantic_failures_for_final_prompt(final_prompt: str, contract_text: str) ->
     return failures
 
 
-def check_contract(text: str) -> dict[str, Any]:
+def triage_failures_for_request(text: str, request: str | None) -> tuple[dict[str, Any], list[str]]:
+    expected = expected_triage_for_request(request)
+    actual = actual_triage(text)
+    final_prompt = section_text(text, "Final Prompt")
+    skill_match_text = section_text(text, "Skill Match")
+    selected_skills = invoked_skills(skill_match_text, final_prompt)
+    final_objective = final_prompt_section_text(final_prompt, "Objective")
+    final_requirements = final_prompt_section_text(final_prompt, "Requirements")
+    final_output = final_prompt_section_text(final_prompt, "Output Format")
+    final_combined = "\n".join([final_objective, final_requirements, final_output])
+
+    failures = []
+    if expected["expected"] and actual != expected["expected"]:
+        failures.append(
+            f"Triage mismatch for request: expected {expected['expected']}, got {actual or 'unknown'}."
+        )
+
+    clarification_route_passed = True
+    if expected["requires_clarification"]:
+        has_office_hours = CANONICAL_CLARIFICATION_SKILL in selected_skills or f"${CANONICAL_CLARIFICATION_SKILL}" in text
+        has_ceo_handoff = "$ceo" in text or re.search(r"back to\s+\$?ceo|return to\s+\$?ceo|回到\s*\$?ceo", text, re.IGNORECASE)
+        asks_for_clarified_spec = "Clarified Spec" in final_prompt
+        direct_execution = has_unnegated_execution_action(final_combined)
+        clarification_route_passed = has_office_hours and has_ceo_handoff and asks_for_clarified_spec and not direct_execution
+        if not has_office_hours:
+            failures.append("Clarification Path must route to $office-hours.")
+        if not has_ceo_handoff:
+            failures.append("Clarification Path must hand off back to $ceo.")
+        if not asks_for_clarified_spec:
+            failures.append("Clarification Path must require a ## Clarified Spec artifact.")
+        if direct_execution:
+            failures.append("Clarification Path Final Prompt contains unnegated direct-execution language.")
+
+    triage_result = {
+        "triage_expected": expected["expected"],
+        "triage_actual": actual,
+        "triage_passed": not failures,
+        "triage_reasons": expected["reasons"],
+        "clarification_route_passed": clarification_route_passed,
+        "clarified_spec_readiness": expected["clarified_spec_readiness"],
+    }
+    return triage_result, failures
+
+
+def check_contract(text: str, request: str | None = None) -> dict[str, Any]:
     section_indices = find_section_indices(text)
     missing_sections = [
         section for section in REQUIRED_TOP_LEVEL_SECTIONS if section not in section_indices
@@ -465,6 +809,7 @@ def check_contract(text: str) -> dict[str, Any]:
     selected_skills = invoked_skills(skill_match_text, final_prompt)
     untraceable_skills = sorted(skill for skill in selected_skills if skill not in inventory_names)
     semantic_failures = semantic_failures_for_final_prompt(final_prompt, contract_text)
+    triage_result, triage_failures = triage_failures_for_request(text, request)
 
     checks = {
         "required_top_level_sections": not missing_sections,
@@ -476,6 +821,7 @@ def check_contract(text: str) -> dict[str, Any]:
         "final_prompt_headings_in_order": final_headings_in_order,
         "skill_source_traceable": not untraceable_skills,
         "semantic_contract_complete": not semantic_failures,
+        "triage_request_alignment": not triage_failures,
     }
 
     failures = []
@@ -496,6 +842,7 @@ def check_contract(text: str) -> dict[str, Any]:
     if untraceable_skills:
         failures.append("Selected skills are not traceable to inventory candidates: " + ", ".join(untraceable_skills))
     failures.extend(semantic_failures)
+    failures.extend(triage_failures)
 
     return {
         "passed": all(checks.values()),
@@ -507,6 +854,7 @@ def check_contract(text: str) -> dict[str, Any]:
         "inventory_candidate_names": sorted(inventory_names),
         "untraceable_skills": untraceable_skills,
         "semantic_failures": semantic_failures,
+        **triage_result,
     }
 
 
@@ -519,6 +867,13 @@ def print_markdown(result: dict[str, Any]) -> None:
     print("\n### Skills")
     print(f"- Selected skills: {', '.join(result['selected_skills']) or 'none'}")
     print(f"- Untraceable skills: {', '.join(result['untraceable_skills']) or 'none'}")
+    print("\n### Triage")
+    print(f"- Expected: {result.get('triage_expected') or 'not checked'}")
+    print(f"- Actual: {result.get('triage_actual') or 'unknown'}")
+    print(f"- Request alignment: {'pass' if result.get('triage_passed') else 'fail'}")
+    print(f"- Clarification route: {'pass' if result.get('clarification_route_passed') else 'fail'}")
+    if result.get("triage_reasons"):
+        print(f"- Reasons: {', '.join(result['triage_reasons'])}")
     if result["failures"]:
         print("\n### Failures")
         for failure in result["failures"]:
@@ -528,13 +883,14 @@ def print_markdown(result: dict[str, Any]) -> None:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Evaluate a CEO skill response for contract compliance.")
     parser.add_argument("path", nargs="?", help="CEO response markdown file. Reads stdin when omitted.")
+    parser.add_argument("--request", help="Raw user request. Enables request-aware triage validation.")
     parser.add_argument("--format", choices=["json", "markdown"], default="markdown")
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
-    result = check_contract(read_input(args.path))
+    result = check_contract(read_input(args.path), args.request)
     if args.format == "json":
         print(json.dumps(result, ensure_ascii=False, indent=2))
     else:
