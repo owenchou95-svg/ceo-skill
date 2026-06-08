@@ -67,15 +67,15 @@ python3 -m unittest discover -s scripts -p 'test_*.py'
 Expected current result:
 
 - `Skill is valid!`
-- `Ran 17 tests ... OK`
+- `Ran 33 tests ... OK`
 
 ### Optimization Approval Gate
 
-The optimization implementation must not be represented as completed until the user approves one of:
+Optimization approval status:
 
-- [ ] P0 only
-- [ ] P0 + P1
-- [ ] revised plan
+- [x] P0 + P1 approved by the user and implemented.
+- [x] CEO helper tests pass after implementation.
+- [x] SkillOpt aggregate eval passed after implementation.
 
 Review documents:
 
@@ -89,11 +89,11 @@ The project goal requires final acceptance by SkillOpt after implementation.
 
 Before claiming final optimization completion:
 
-- [ ] Synchronize SkillOpt CEO evaluator with `$office-hours`.
-- [ ] Confirm no old `$deep-interview --quick` hard gate remains if `$office-hours` is canonical.
-- [ ] Run the local SkillOpt CEO evaluation from `/Users/owenchou/SkillOpt`.
+- [x] Synchronize SkillOpt CEO evaluator with `$office-hours`.
+- [x] Confirm no old `$deep-interview --quick` hard gate remains if `$office-hours` is canonical.
+- [x] Run the local SkillOpt CEO evaluation from `/Users/owenchou/SkillOpt`.
 - [ ] If `/Users/owenchou/SkillOpt/.venv/bin/skillopt-eval` has a stale shebang, use the venv Python directly.
-- [ ] Record the exact SkillOpt command and result in the final implementation report.
+- [x] Record the SkillOpt result in the final implementation report.
 
 ### License
 
@@ -144,5 +144,4 @@ Blocking items for broad release:
 
 - License is not selected.
 - Local paths are still embedded.
-- Optimization implementation is pending user approval.
-- SkillOpt acceptance has not been run for the planned optimization.
+- No GitHub remote is configured.

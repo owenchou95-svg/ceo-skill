@@ -1,7 +1,7 @@
 # GitHub Release Audit
 
 Date: 2026-06-08
-Status: private-review ready; broad public release not ready.
+Status: optimization complete; private-review ready; broad public release not ready.
 
 This audit records the actual release-readiness checks run against the CEO skill repository. It does not change code, choose a license, add a remote, or push to GitHub.
 
@@ -20,6 +20,9 @@ Observed:
 - Worktree was clean before this audit document was added.
 - No Git remote was configured.
 - Latest commits at audit time:
+  - `bd2f47d Make CEO routing executable under real request pressure`
+  - `bc22bd5 Add CEO skill changelog`
+  - `3e29d9e Record CEO GitHub release audit`
   - `ca50f95 Add CEO GitHub release checklist`
   - `1fa2521 Introduce CEO skill README`
   - `258fa46 Add CEO optimization review packet`
@@ -112,7 +115,7 @@ test -f README.md && echo README_EXISTS || echo README_MISSING
 Observed:
 
 - `LICENSE_MISSING`
-- `CHANGELOG_MISSING`
+- `CHANGELOG_EXISTS`
 - `README_EXISTS`
 
 Public release should not proceed until a license is selected. `CHANGELOG.md` is optional but recommended.
@@ -129,9 +132,10 @@ python3 -m unittest discover -s scripts -p 'test_*.py'
 Observed:
 
 - `Skill is valid!`
-- `Ran 17 tests ... OK`
+- `Ran 33 tests ... OK`
+- SkillOpt aggregate eval passed: hard=1.0, soft=0.9799375, n=16.
 
-This validates the current skill structure and helper tests. It does not validate the planned P0/P1 optimization because that implementation is still pending user approval.
+This validates the current skill structure, helper tests, and the SkillOpt acceptance gate for the approved P0/P1 optimization.
 
 ## Current Release Readiness
 
@@ -144,8 +148,7 @@ Blocking items:
 1. No license selected.
 2. No remote repository configured.
 3. Local `/Users/owenchou/...` paths remain embedded.
-4. P0/P1 optimization is documented but not implemented.
-5. SkillOpt acceptance has not been run for the planned optimization.
+4. Path portability policy has not been decided for broad public users.
 
 ## Recommended Next Steps
 
@@ -153,6 +156,5 @@ Before public release:
 
 1. Choose and add a license.
 2. Decide whether to keep local paths as examples or replace them with `$CODEX_HOME` / environment variables.
-3. Approve either P0 or P0 + P1 optimization implementation.
-4. Run local tests and SkillOpt after implementation.
-5. Add a GitHub remote and push only after privacy/path/license decisions are resolved.
+3. Add a GitHub remote.
+4. Push only after privacy/path/license decisions are resolved.

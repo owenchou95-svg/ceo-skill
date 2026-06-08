@@ -60,5 +60,5 @@ Dates use local project context date unless otherwise noted.
 
 ### Notes
 
-- Functional P0/P1 optimization changes have not been implemented yet.
-- Broad public release is not ready until license, path portability, user approval, and SkillOpt gates are resolved.
+- Functional P0/P1 optimization changes are implemented in `bd2f47d`.
+- Broad public release is not ready until license, path portability, and GitHub remote decisions are resolved.
