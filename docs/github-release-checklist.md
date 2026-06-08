@@ -1,6 +1,6 @@
 # GitHub Release Checklist
 
-Status: pre-release checklist.
+Status: published.
 Date: 2026-06-08
 
 Use this checklist before publishing the CEO skill repository to GitHub.
@@ -9,11 +9,11 @@ Use this checklist before publishing the CEO skill repository to GitHub.
 
 ### Repository Hygiene
 
-- [ ] Confirm `git status --short` is clean.
-- [ ] Confirm commit history has a clear baseline and review documents.
-- [ ] Confirm no generated caches or local test artifacts are tracked.
-- [ ] Confirm `.gitignore` covers Python caches and local temporary files.
-- [ ] Decide whether to publish optimization report docs with the repository.
+- [x] Confirm `git status --short` is clean.
+- [x] Confirm commit history has a clear baseline and review documents.
+- [x] Confirm no generated caches or local test artifacts are tracked.
+- [x] Confirm `.gitignore` covers Python caches and local temporary files.
+- [x] Decide whether to publish optimization report docs with the repository.
 
 ### User-Specific Paths
 
@@ -35,25 +35,25 @@ Files likely to need path review:
 
 ### Privacy / Secret Review
 
-- [ ] Search for secrets:
+- [x] Search for secrets:
 
 ```bash
 rg -n "sk-|api[_-]?key|token|secret|password|credential|oauth|bearer" .
 ```
 
-- [ ] Search for private machine paths:
+- [x] Search for private machine paths:
 
 ```bash
 rg -n "/Users/owenchou|/Users/" .
 ```
 
-- [ ] Search for email addresses and private URLs:
+- [x] Search for email addresses and private URLs:
 
 ```bash
 rg -n "[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}|https?://[^ )>]+" .
 ```
 
-- [ ] Confirm no private repo URLs, tokens, cookies, or personal data are embedded.
+- [x] Confirm no private repo URLs, tokens, cookies, or personal data are embedded.
 
 ### Validation
 
@@ -108,9 +108,9 @@ Before public release:
 
 ### README Accuracy
 
-- [ ] Confirm README describes current implemented behavior, not only planned behavior.
-- [ ] Keep known gaps visible until P0/P1 are actually implemented.
-- [ ] Confirm validation commands still work from a fresh clone or document required path adaptation.
+- [x] Confirm README describes current implemented behavior, not only planned behavior.
+- [x] Keep known gaps visible until P0/P1 are actually implemented.
+- [x] Confirm validation commands still work from a fresh clone or document required path adaptation.
 
 ### GitHub Remote
 
@@ -120,13 +120,13 @@ Before pushing:
 git remote -v
 ```
 
-If no remote exists:
+Remote:
 
 ```bash
-git remote add origin <github-repo-url>
+origin https://github.com/owenchou95-svg/ceo-skill.git
 ```
 
-Then push:
+Published:
 
 ```bash
 git push -u origin main
@@ -138,8 +138,8 @@ Do not push until repository privacy, path portability, and approval status are 
 
 Ready for private review: yes.
 
-Ready for broad public release: not yet.
+Ready for broad public release: yes.
 
 Blocking items for broad release:
 
-- No GitHub remote is configured.
+- None.

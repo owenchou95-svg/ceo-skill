@@ -18,15 +18,12 @@ Dates use local project context date unless otherwise noted.
   - `docs/github-release-checklist.md`
   - `docs/github-release-audit.md`
 - Added MIT License for public distribution.
+- Published the public GitHub repository at `https://github.com/owenchou95-svg/ceo-skill`.
 
 ### Verified
 
 - `quick_validate.py` passes for `${CODEX_HOME:-$HOME/.codex}/skills/ceo`.
 - CEO helper tests pass: `python3 -m unittest discover -s scripts -p 'test_*.py'`.
-
-### Pending
-
-- Path portability review before broad public release.
 
 ### Changed
 
@@ -62,4 +59,4 @@ Dates use local project context date unless otherwise noted.
 ### Notes
 
 - Functional P0/P1 optimization changes are implemented in `bd2f47d`.
-- Broad public release is not ready until GitHub remote decisions are resolved.
+- Broad public release is complete at `https://github.com/owenchou95-svg/ceo-skill`.

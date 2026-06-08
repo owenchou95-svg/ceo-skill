@@ -1,9 +1,9 @@
 # GitHub Release Audit
 
 Date: 2026-06-08
-Status: optimization complete; path portability complete; private-review ready; broad public release blocked only on remote publication.
+Status: published.
 
-This audit records the actual release-readiness checks run against the CEO skill repository. It does not change code, choose a license, add a remote, or push to GitHub.
+This audit records the actual release-readiness checks run against the CEO skill repository and the final GitHub publication target.
 
 ## Repository State
 
@@ -17,8 +17,13 @@ git log --oneline --decorate -8
 
 Observed:
 
-- Worktree was clean before this audit document was added.
-- No Git remote was configured.
+- Worktree was clean before publication.
+- Git remote is configured:
+  - `origin https://github.com/owenchou95-svg/ceo-skill.git`
+- GitHub repository:
+  - `https://github.com/owenchou95-svg/ceo-skill`
+  - visibility: public
+  - default branch: `main`
 - Latest commits at audit time:
   - `bd2f47d Make CEO routing executable under real request pressure`
   - `bc22bd5 Add CEO skill changelog`
@@ -140,15 +145,14 @@ This validates the current skill structure, helper tests, and the SkillOpt accep
 
 Private review readiness: yes.
 
-Broad public release readiness: no.
+Broad public release readiness: yes.
 
 Blocking items:
 
-1. No remote repository configured.
+- None.
 
 ## Recommended Next Steps
 
-Before public release:
+Published target:
 
-1. Add a GitHub remote.
-2. Push after final privacy scan passes.
+- `https://github.com/owenchou95-svg/ceo-skill`

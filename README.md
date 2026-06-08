@@ -190,7 +190,7 @@ Verification evidence:
 
 ## Remaining Public Release Gaps
 
-- GitHub remote configuration is still needed before broad public release.
+- None. The repository is ready for public use.
 
 ## Public Release Notes
 
