@@ -1,0 +1,4 @@
+interface:
+  display_name: "CEO"
+  short_description: "Compile rough goals into executable specs"
+  default_prompt: "Use $ceo to turn my rough request into an executable spec with triage, skill routing, validation, and contract checks."
