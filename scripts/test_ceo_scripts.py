@@ -687,7 +687,7 @@ class InventoryTests(unittest.TestCase):
 
 
 class ReleaseArtifactTests(unittest.TestCase):
-    def test_multi_agent_adapter_files_exist_with_frontmatter(self) -> None:
+    def test_multi_agent_adapter_notes_exist_without_skill_filename(self) -> None:
         adapters = {
             "claude-code": "Claude Code",
             "openclaw": "OpenClaw",
@@ -695,7 +695,7 @@ class ReleaseArtifactTests(unittest.TestCase):
         }
         for adapter, host_name in adapters.items():
             with self.subTest(adapter=adapter):
-                path = REPO_ROOT / "adapters" / adapter / "SKILL.md"
+                path = REPO_ROOT / "adapters" / f"{adapter}.md"
                 self.assertTrue(path.exists(), f"missing {path}")
                 text = path.read_text(encoding="utf-8")
                 self.assertTrue(text.startswith("---\nname: ceo\n"), f"{path} must expose name: ceo")
@@ -703,6 +703,7 @@ class ReleaseArtifactTests(unittest.TestCase):
                 self.assertIn(host_name, text)
                 self.assertIn("skill_inventory.py", text)
                 self.assertIn("CEO_SKILL_HOME", text)
+        self.assertEqual([], list((REPO_ROOT / "adapters").rglob("SKILL.md")))
 
     def test_multi_agent_docs_are_linked_and_cover_hosts(self) -> None:
         readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
@@ -710,9 +711,9 @@ class ReleaseArtifactTests(unittest.TestCase):
         skill = (REPO_ROOT / "SKILL.md").read_text(encoding="utf-8")
 
         for required in [
-            "adapters/claude-code/SKILL.md",
-            "adapters/openclaw/SKILL.md",
-            "adapters/hermes/SKILL.md",
+            "adapters/claude-code.md",
+            "adapters/openclaw.md",
+            "adapters/hermes.md",
             "docs/multi-agent-usage.md",
             "OPENCLAW_HOME",
             "HERMES_HOME",
@@ -724,6 +725,19 @@ class ReleaseArtifactTests(unittest.TestCase):
 
         self.assertIn("${OPENCLAW_HOME:-$HOME/.openclaw}/skills", skill)
         self.assertIn("${HERMES_HOME:-$HOME/.hermes}/skills", skill)
+
+    def test_multi_agent_install_verifier_passes(self) -> None:
+        result = subprocess.run(
+            [sys.executable, str(SCRIPT_DIR / "verify_multi_agent_install.py")],
+            cwd=REPO_ROOT,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertIn("Multi-agent install verification: PASS", result.stdout)
+        for host in ["codex", "claude-code", "openclaw", "hermes"]:
+            self.assertIn(f"- {host}: ok", result.stdout)
 
 
 if __name__ == "__main__":

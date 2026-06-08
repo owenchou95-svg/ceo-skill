@@ -4,7 +4,7 @@ CEO Prompt Builder is a multi-agent skill for turning rough user intent into exe
 
 It is not a prompt-polishing helper. Its job is to decide whether a request is ready for execution, route unclear requests to clarification, inspect local skill/plugin metadata, and produce a final prompt that another agent can act on with explicit requirements, boundaries, validation, and output format.
 
-The root `SKILL.md` is the canonical protocol. Host adapters for Claude Code, OpenClaw, and Hermes live under `adapters/` and point back to the same contract so the skill does not drift across agents.
+The root `SKILL.md` is the canonical protocol. Host adapter notes for Claude Code, OpenClaw, and Hermes live under `adapters/` and point back to the same contract so the skill does not drift across agents.
 
 ## What It Does
 
@@ -133,9 +133,9 @@ Detailed host usage is documented in `docs/multi-agent-usage.md`.
 
 Adapter entry points:
 
-- `adapters/claude-code/SKILL.md`
-- `adapters/openclaw/SKILL.md`
-- `adapters/hermes/SKILL.md`
+- `adapters/claude-code.md`
+- `adapters/openclaw.md`
+- `adapters/hermes.md`
 
 ## Output Contract
 
@@ -189,12 +189,9 @@ python3 scripts/evaluate_ceo_output.py --request "<raw user request>" path/to/ce
 ├── SKILL.md
 ├── README.md
 ├── adapters/
-│   ├── claude-code/
-│   │   └── SKILL.md
-│   ├── hermes/
-│   │   └── SKILL.md
-│   └── openclaw/
-│       └── SKILL.md
+│   ├── claude-code.md
+│   ├── hermes.md
+│   └── openclaw.md
 ├── agents/
 │   └── openai.yaml
 ├── docs/
@@ -210,6 +207,7 @@ python3 scripts/evaluate_ceo_output.py --request "<raw user request>" path/to/ce
 └── scripts/
     ├── evaluate_ceo_output.py
     ├── skill_inventory.py
+    ├── verify_multi_agent_install.py
     └── test_ceo_scripts.py
 ```
 
@@ -248,7 +246,7 @@ Verification evidence:
 
 ## Remaining Public Release Gaps
 
-- None. The repository includes Codex, Claude Code, OpenClaw, and Hermes installation paths plus adapter files.
+- None. The repository includes Codex, Claude Code, OpenClaw, and Hermes installation paths plus adapter notes.
 
 ## Public Release Notes
 

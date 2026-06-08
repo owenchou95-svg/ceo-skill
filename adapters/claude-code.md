@@ -3,7 +3,7 @@ name: ceo
 description: Turn rough user ideas, goals, or task descriptions into executable agent specifications. Use when the user asks to create, improve, structure, or evaluate a prompt; wants requirements plus validation; or wants local skills searched before selecting an execution route.
 ---
 
-# CEO Prompt Builder for Claude Code
+# Claude Code Adapter
 
 This is the Claude Code adapter for CEO Prompt Builder. It keeps the same operating contract as the root `SKILL.md`, with Claude Code installation and path resolution rules.
 

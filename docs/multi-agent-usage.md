@@ -1,15 +1,15 @@
 # Multi-Agent Usage
 
-CEO Prompt Builder is distributed as a Codex skill, but the repository is intentionally host-light: the executable protocol lives in `SKILL.md`, the helper scripts are plain Python, and the adapters under `adapters/` provide host-specific install and dispatch instructions.
+CEO Prompt Builder is distributed as a Codex skill, but the repository is intentionally host-light: the executable protocol lives in `SKILL.md`, the helper scripts are plain Python, and the adapter notes under `adapters/` provide host-specific install and dispatch instructions.
 
 ## Supported Hosts
 
 | Host | Install Root | Adapter |
 | --- | --- | --- |
 | Codex | `${CODEX_HOME:-$HOME/.codex}/skills/ceo` | root `SKILL.md` |
-| Claude Code | `${CLAUDE_HOME:-$HOME/.claude}/skills/ceo` | `adapters/claude-code/SKILL.md` |
-| OpenClaw | `${OPENCLAW_HOME:-$HOME/.openclaw}/skills/ceo` | `adapters/openclaw/SKILL.md` |
-| Hermes | `${HERMES_HOME:-$HOME/.hermes}/skills/ceo` | `adapters/hermes/SKILL.md` |
+| Claude Code | `${CLAUDE_HOME:-$HOME/.claude}/skills/ceo` | root `SKILL.md` plus `adapters/claude-code.md` |
+| OpenClaw | `${OPENCLAW_HOME:-$HOME/.openclaw}/skills/ceo` | root `SKILL.md` plus `adapters/openclaw.md` |
+| Hermes | `${HERMES_HOME:-$HOME/.hermes}/skills/ceo` | root `SKILL.md` plus `adapters/hermes.md` |
 
 ## Install
 
@@ -85,9 +85,9 @@ Codex uses the root `SKILL.md` directly.
 
 Claude Code can use the repository as a normal `SKILL.md`-based skill. The Claude adapter documents how to resolve the repository root and run the same helper scripts.
 
-OpenClaw can use the adapter as a native conversational skill, or as a prompt prefix before spawning an ACP coding session. The generated `Final Prompt` should become the spawned session prompt.
+OpenClaw can use the root `SKILL.md` as a native conversational skill, with `adapters/openclaw.md` as dispatch guidance, or as a prompt prefix before spawning an ACP coding session. The generated `Final Prompt` should become the spawned session prompt.
 
-Hermes can use the adapter as a native `SKILL.md` skill. If Hermes is coordinating another coding agent, pass the generated `Final Prompt` to that agent unchanged.
+Hermes can use the root `SKILL.md` as a native `SKILL.md` skill, with `adapters/hermes.md` as dispatch guidance. If Hermes is coordinating another coding agent, pass the generated `Final Prompt` to that agent unchanged.
 
 ## Verify
 
@@ -96,6 +96,7 @@ From the repository root:
 ```bash
 python3 -m unittest discover -s scripts -p 'test_*.py'
 python3 scripts/skill_inventory.py --request "为一个粗略的前端应用想法生成可执行 prompt，并选择验证技能" --format markdown
+python3 scripts/verify_multi_agent_install.py
 ```
 
 For Codex structure validation:

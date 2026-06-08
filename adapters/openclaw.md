@@ -3,7 +3,7 @@ name: ceo
 description: Use when an OpenClaw user wants to turn a rough goal into an executable agent specification with demand triage, local skill inventory, selected agent routing, concrete validation, and a final prompt that another coding agent can run.
 ---
 
-# CEO Prompt Builder for OpenClaw
+# OpenClaw Adapter
 
 This is the OpenClaw native skill adapter for CEO Prompt Builder. OpenClaw can use this as a conversational methodology skill or as a prompt prefix before spawning an ACP coding session.
 

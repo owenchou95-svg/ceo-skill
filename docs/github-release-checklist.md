@@ -68,7 +68,7 @@ python3 -m unittest discover -s scripts -p 'test_*.py'
 Expected current result:
 
 - `Skill is valid!`
-- `Ran 37 tests ... OK`
+- `Ran 38 tests ... OK`
 
 ### Optimization Approval Gate
 
@@ -116,12 +116,14 @@ Before public release:
 
 ### Multi-Agent Adapters
 
-- [x] Add Claude Code adapter: `adapters/claude-code/SKILL.md`.
-- [x] Add OpenClaw adapter: `adapters/openclaw/SKILL.md`.
-- [x] Add Hermes adapter: `adapters/hermes/SKILL.md`.
+- [x] Add Claude Code adapter notes: `adapters/claude-code.md`.
+- [x] Add OpenClaw adapter notes: `adapters/openclaw.md`.
+- [x] Add Hermes adapter notes: `adapters/hermes.md`.
 - [x] Add multi-agent usage guide: `docs/multi-agent-usage.md`.
 - [x] Confirm inventory scans `${OPENCLAW_HOME:-$HOME/.openclaw}/skills`.
 - [x] Confirm inventory scans `${HERMES_HOME:-$HOME/.hermes}/skills`.
+- [x] Confirm adapter notes are not named `SKILL.md`, so they do not pollute recursive skill inventory.
+- [x] Run simulated multi-agent installation verification.
 
 ### GitHub Remote
 

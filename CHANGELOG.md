@@ -8,8 +8,9 @@ Dates use local project context date unless otherwise noted.
 
 ### Added
 
-- Added multi-agent adapters for Claude Code, OpenClaw, and Hermes.
+- Added multi-agent adapter notes for Claude Code, OpenClaw, and Hermes.
 - Added `docs/multi-agent-usage.md` with host-specific install and dispatch guidance.
+- Added simulated multi-agent installation verification.
 - Initialized the CEO skill as a standalone git repository.
 - Added `README.md` for GitHub-facing project introduction.
 - Added review documentation for the planned CEO optimization:

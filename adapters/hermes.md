@@ -3,7 +3,7 @@ name: ceo
 description: Use when a Hermes agent needs to convert rough user intent into an executable prompt with triage, full local skill inventory, selected routing, validation evidence, and output contract.
 ---
 
-# CEO Prompt Builder for Hermes
+# Hermes Adapter
 
 This is the Hermes native skill adapter for CEO Prompt Builder. It follows the root `SKILL.md` protocol and adjusts only the install root and dispatch wording.
 

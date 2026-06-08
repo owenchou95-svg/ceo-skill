@@ -49,9 +49,9 @@ Relevant tracked project files:
 - `LICENSE`
 - `README.md`
 - `SKILL.md`
-- `adapters/claude-code/SKILL.md`
-- `adapters/hermes/SKILL.md`
-- `adapters/openclaw/SKILL.md`
+- `adapters/claude-code.md`
+- `adapters/hermes.md`
+- `adapters/openclaw.md`
 - `agents/openai.yaml`
 - `docs/ceo-optimization-report.md`
 - `docs/ceo-optimization-test-matrix.md`
@@ -117,18 +117,20 @@ Main path categories:
 Command:
 
 ```bash
-test -f adapters/claude-code/SKILL.md
-test -f adapters/openclaw/SKILL.md
-test -f adapters/hermes/SKILL.md
+test -f adapters/claude-code.md
+test -f adapters/openclaw.md
+test -f adapters/hermes.md
 test -f docs/multi-agent-usage.md
+python3 scripts/verify_multi_agent_install.py
 ```
 
 Observed:
 
-- Claude Code adapter exists and documents `${CLAUDE_HOME:-$HOME/.claude}/skills/ceo`.
-- OpenClaw adapter exists and documents `${OPENCLAW_HOME:-$HOME/.openclaw}/skills/ceo`.
-- Hermes adapter exists and documents `${HERMES_HOME:-$HOME/.hermes}/skills/ceo`.
+- Claude Code adapter notes exist and document `${CLAUDE_HOME:-$HOME/.claude}/skills/ceo`.
+- OpenClaw adapter notes exist and document `${OPENCLAW_HOME:-$HOME/.openclaw}/skills/ceo`.
+- Hermes adapter notes exist and document `${HERMES_HOME:-$HOME/.hermes}/skills/ceo`.
 - Multi-agent guide exists and documents Codex, Claude Code, OpenClaw, and Hermes installs.
+- Simulated multi-agent install verification passes for Codex, Claude Code, OpenClaw, and Hermes roots.
 
 ## License / Changelog
 
@@ -160,7 +162,7 @@ python3 -m unittest discover -s scripts -p 'test_*.py'
 Observed:
 
 - `Skill is valid!`
-- `Ran 37 tests ... OK`
+- `Ran 38 tests ... OK`
 - SkillOpt aggregate eval passed: hard=1.0, soft=0.976859375, n=16.
 
 This validates the current skill structure, helper tests, and the SkillOpt acceptance gate for the approved P0/P1 optimization.
