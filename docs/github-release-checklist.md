@@ -156,3 +156,14 @@ Ready for broad public release: yes.
 Blocking items for broad release:
 
 - None.
+
+## Public Showcase Gate
+
+- [x] README has a hook, badges, one-line install, first prompt, examples, safety boundaries, and verification commands.
+- [x] `README.en.md` mirrors the public README in English.
+- [x] `examples/` contains Direct Path, Clarification Path, and high-risk production cases.
+- [x] `assets/showcase.gif` exists and is referenced by README.
+- [x] `assets/showcase.tape` documents the VHS replay path.
+- [x] `scripts/render_showcase_gif.py` can regenerate the committed GIF without third-party dependencies.
+- [x] `.claude-plugin/marketplace.json` exists.
+- [x] GitHub issue, PR, and release templates exist.

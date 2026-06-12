@@ -1,6 +1,6 @@
 ---
 name: ceo
-description: Turn rough user ideas, goals, or task descriptions into high-quality executable prompts. Use when the user asks to create, improve, structure, or evaluate a prompt; wants a CEO-level framing of a request; wants requirements plus thinking process plus validation method; or wants Codex to search local installed skills/plugins and incorporate the best-fit ones into the prompt, including comparing multiple applicable skills before choosing. First triage whether the request is clear enough to prompt directly or should route through $office-hours for requirements clarification.
+description: Turn rough user ideas, goals, or task descriptions into high-quality executable prompts. Use when the user asks to create, improve, structure, or evaluate a prompt; wants a CEO-level framing of a request; wants requirements plus thinking process plus validation method; or wants Codex to search local installed skills/plugins and incorporate the best-fit ones into the prompt, including comparing multiple applicable skills before choosing. First triage whether the request is clear enough to prompt directly or should route through $office-hours for requirements clarification. Do not use for directly implementing the requested feature, ordinary code review, security audit, deployment, or tasks where the user already provided a complete executable spec and only wants execution.
 ---
 
 # CEO Prompt Builder
@@ -67,7 +67,7 @@ Use `Clarification Path` when any of these are true:
 - Multiple materially different routes are plausible and choosing one would shape the final prompt.
 - The task involves high-risk or irreversible work and the user has not supplied the boundary or authority needed to proceed.
 
-For `Clarification Path`, route strongly to `$office-hours`. Do not invent a complete execution prompt for the underlying task. Instead, produce a directly executable clarification prompt that asks `$office-hours` to run the appropriate office-hours mode for the user's situation and return this CEO handoff artifact:
+For `Clarification Path`, route strongly to `$office-hours`. Do not invent a complete execution prompt for the underlying task. Instead, produce a directly executable clarification prompt that asks `$office-hours` to run the appropriate office-hours mode for the user's situation, return this CEO handoff artifact, and explicitly pass the finished `## Clarified Spec` back to `$ceo` for the final execution prompt:
 
 ```md
 ## Clarified Spec
@@ -81,7 +81,7 @@ For `Clarification Path`, route strongly to `$office-hours`. Do not invent a com
 - Acceptance Criteria:
 - Risks and Reversibility:
 - Open Questions:
-- CEO Handoff Summary:
+- CEO Handoff Summary: include the exact next step `Return this Clarified Spec to $ceo for the final execution prompt` when no blocking questions remain.
 ```
 
 When a clarified spec is later supplied, treat it as primary context, rerun `Demand Triage`, and only produce the final execution prompt if all material gaps are resolved. A clarified spec is ready only when the required fields are present, no material field is empty or `TBD`, `Open Questions` says `None blocking` or equivalent, `Decision Boundaries` do not contain unresolved route choices, and acceptance criteria are concrete. If the clarified spec still leaves a material route choice open, stay in `Clarification Path` and ask only for that choice.
@@ -102,6 +102,10 @@ When a clarified spec is later supplied, treat it as primary context, rerun `Dem
      cd "${CEO_SKILL_HOME:-${CODEX_HOME:-$HOME/.codex}/skills/ceo}"
      python3 scripts/skill_inventory.py --request "<raw user request>" --format markdown
      ```
+     If `Demand Triage` already determined `Clarification Path`, pass that decision through so `$office-hours` / `gstack-office-hours` can become finalist rank 1:
+     ```bash
+     python3 scripts/skill_inventory.py --request "<raw user request>" --triage clarification --format markdown
+     ```
    - If `CEO_SKILL_HOME` is not set and this skill is installed outside Codex, resolve the equivalent install root first, such as `${CLAUDE_HOME:-$HOME/.claude}/skills/ceo`, `${OPENCLAW_HOME:-$HOME/.openclaw}/skills/ceo`, or `${HERMES_HOME:-$HOME/.hermes}/skills/ceo`.
    - The script must scan all configured roots:
      - `${CODEX_HOME:-$HOME/.codex}/skills`
@@ -111,9 +115,10 @@ When a clarified spec is later supplied, treat it as primary context, rerun `Dem
      - `${OPENCLAW_HOME:-$HOME/.openclaw}/skills`
      - `${HERMES_HOME:-$HOME/.hermes}/skills`
    - It reads only frontmatter `name`, `description`, and path for all `SKILL.md` files; the parser stops at the closing frontmatter marker and does not read full skill bodies during inventory.
-   - It uses deterministic weighted lexical recall, not model intuition, embedding search, or a cached index.
+   - It uses deterministic weighted lexical recall, not model intuition or embedding search. A frontmatter-only index/cache may be used to avoid reparsing unchanged `SKILL.md` files, but routing must remain deterministic and cache entries must invalidate on path, mtime, or size changes.
    - Default candidate recall is top 10. Complex tasks use top 15. Full `SKILL.md` reads are limited to the top 3-4 finalists.
    - Finalists are selected with coverage-aware role diversity, not raw score alone. Prefer a compact set that covers primary execution, source/access, validation/evidence, and risk/planning/clarification when those roles are present.
+   - For `Clarification Path`, the `$office-hours` / `gstack-office-hours` canonical family must be finalist rank 1 when present. Implementation-focused skills may appear only as future-after-clarification context and must not displace the clarification route.
    - Alias families may be collapsed for ranking so mirrored skills or cached plugin versions do not crowd out other roles. Final prompts must still use the exact inventory-provided `invocation_name`.
    - For clear, low-risk repository Markdown/README edits where inventory finds only broad QA/diagnosis/CI-adjacent skills, the report may state `No special skill recommended` and skip full skill reads. This is preferable to forcing weak matches into the final prompt.
    - Include the resulting `Skill Inventory Report` in the response, including each candidate's exact `invocation_name` and any `Out-of-scope task hints ignored/penalized` line when present. If the script cannot run or scans zero files, do not produce a final execution prompt; report the blocker or route to clarification.
@@ -145,6 +150,7 @@ When a clarified spec is later supplied, treat it as primary context, rerun `Dem
    - Use the structure in `references/prompt-template.md`.
    - Include explicit `$skill-name` invocations when a skill should be used.
    - For `Clarification Path`, include `$office-hours` as the strong skill invocation and make the prompt about requirements clarification, not implementation.
+   - For `Clarification Path`, the `## Output Format` section must include `## Clarified Spec` and an explicit `$ceo` return handoff. Do not rely on generic "CEO handoff" wording alone.
    - When plugin skills are selected, use the exact `invocation_name` from `Skill Inventory Report`, such as `$browser:control-in-app-browser`, `$chrome:control-chrome`, `$github:github`, `$documents:documents`, or `$presentations:Presentations`.
    - Keep the prompt directly executable; avoid meta commentary inside the prompt.
    - Before returning, check the prompt against `Executable Spec Contract`. If it fails, revise it or route to `Clarification Path`.
@@ -208,6 +214,6 @@ For browser app, frontend build, prototype, demo, landing page, website, or game
 
 In `## Thinking Process`, instruct only observable work: inspect context, choose the route, implement in scoped steps, verify each workflow, and report evidence. Do not ask for hidden reasoning or chain-of-thought.
 
-For `Clarification Path`, the `Final Prompt` must still use the required headings, but its objective is requirements clarification. Its validation should require a clarified spec with goal, deliverable, in-scope/out-of-scope boundaries, decision boundaries, constraints, and acceptance criteria, followed by a handoff back to `$ceo` for the final execution prompt.
+For `Clarification Path`, the `Final Prompt` must still use the required headings, but its objective is requirements clarification. Its validation should require a clarified spec with goal, deliverable, in-scope/out-of-scope boundaries, decision boundaries, constraints, and acceptance criteria, followed by an explicit handoff back to `$ceo` for the final execution prompt. The `## Output Format` section should name the required `## Clarified Spec` fields and include the literal `$ceo` next-step handoff.
 
-When updating or evaluating this skill, use `references/test-fixtures.md` as the minimum behavior fixture set and run `scripts/evaluate_ceo_output.py` against generated fixture outputs before claiming the CEO prompt is executable.
+When updating or evaluating this skill, use `references/eval-fixtures.json` as the machine-readable behavior fixture set and `references/test-fixtures.md` as the human-readable explanation. Run `scripts/validate_eval_fixtures.py`, `scripts/validate_contract_drift.py`, and `scripts/evaluate_ceo_output.py` against generated fixture outputs before claiming the CEO prompt is executable.

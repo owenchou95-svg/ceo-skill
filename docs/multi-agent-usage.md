@@ -13,6 +13,8 @@ CEO Prompt Builder is distributed as a Codex skill, but the repository is intent
 
 ## Install
 
+Use `docs/safe-install-uninstall.md` for overwrite-safe install, update, rollback, and uninstall commands. The direct clone examples below are only safe after confirming the target path does not already exist.
+
 Codex:
 
 ```bash
@@ -95,8 +97,11 @@ From the repository root:
 
 ```bash
 python3 -m unittest discover -s scripts -p 'test_*.py'
+python3 scripts/validate_contract_drift.py
+python3 scripts/validate_eval_fixtures.py references/eval-fixtures.json
 python3 scripts/skill_inventory.py --request "为一个粗略的前端应用想法生成可执行 prompt，并选择验证技能" --format markdown
 python3 scripts/verify_multi_agent_install.py
+python3 scripts/smoke_host_native_cli.py
 ```
 
 For Codex structure validation:

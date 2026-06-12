@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 import re
+import time
 from pathlib import Path
 from typing import Any
 
@@ -46,6 +47,15 @@ def default_roots() -> list[str]:
 
 def plugin_cache_root() -> Path:
     return codex_home() / "plugins" / "cache"
+
+
+CACHE_SCHEMA_VERSION = 1
+CANONICAL_CLARIFICATION_INVOCATIONS = {"office-hours", "gstack-office-hours"}
+
+
+def default_cache_path() -> Path:
+    cache_home = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache")).expanduser()
+    return cache_home / "ceo-skill" / "inventory-index-v1.json"
 
 GENERIC_QUERY_TOKENS = {
     "about",
@@ -688,30 +698,128 @@ def domain_terms_for_request(task_type: str) -> list[str]:
     return SKILL_DOMAIN_TERMS.get(task_type, TASK_TYPES.get(task_type, []))
 
 
-def scan_roots(roots: list[str]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+def cache_entry_for_skill(path: Path, root_path: Path, cached: dict[str, Any] | None) -> tuple[dict[str, Any] | None, str]:
+    try:
+        stat = path.stat()
+    except OSError:
+        return None, "miss"
+    cache_key = str(path)
+    if cached:
+        entry = cached.get("entries", {}).get(cache_key)
+        if (
+            entry
+            and entry.get("mtime_ns") == stat.st_mtime_ns
+            and entry.get("size") == stat.st_size
+            and entry.get("schema_version") == CACHE_SCHEMA_VERSION
+        ):
+            record = dict(entry["record"])
+            record["source_root"] = str(root_path)
+            return record, "hit"
+    fm = parse_frontmatter(path)
+    name = fm.get("name") or path.parent.name
+    description = fm.get("description", "")
+    if not name:
+        return None, "miss"
+    invocation_name = invocation_name_for_path(str(path), name)
+    record = {
+        "name": name,
+        "invocation_name": invocation_name,
+        "description": description,
+        "path": str(path),
+        "source_root": str(root_path),
+    }
+    return {
+        "record": record,
+        "mtime_ns": stat.st_mtime_ns,
+        "size": stat.st_size,
+        "schema_version": CACHE_SCHEMA_VERSION,
+    }, "miss"
+
+
+def load_cache(cache_path: Path, roots: list[str], rebuild: bool) -> dict[str, Any] | None:
+    if rebuild or not cache_path.exists():
+        return None
+    try:
+        payload = json.loads(cache_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    if payload.get("schema_version") != CACHE_SCHEMA_VERSION:
+        return None
+    if payload.get("roots") != roots:
+        return None
+    return payload
+
+
+def save_cache(cache_path: Path, roots: list[str], entries: dict[str, Any]) -> None:
+    payload = {
+        "schema_version": CACHE_SCHEMA_VERSION,
+        "roots": roots,
+        "entries": entries,
+    }
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    cache_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True), encoding="utf-8")
+
+
+def scan_roots(
+    roots: list[str],
+    *,
+    use_cache: bool = False,
+    cache_path: Path | None = None,
+    rebuild_cache: bool = False,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
     root_reports = []
     records = []
+    cache_stats: dict[str, Any] = {
+        "enabled": use_cache,
+        "path": str(cache_path or default_cache_path()),
+        "hits": 0,
+        "misses": 0,
+        "writes": 0,
+    }
+    normalized_roots = [str(Path(root).expanduser()) for root in roots]
+    cached = load_cache(cache_path or default_cache_path(), normalized_roots, rebuild_cache) if use_cache else None
+    next_entries: dict[str, Any] = {}
+
     for root in roots:
         root_path = Path(root).expanduser()
+        start = time.perf_counter()
         skill_paths = sorted(root_path.rglob("SKILL.md")) if root_path.exists() else []
-        root_reports.append({"path": str(root_path), "exists": root_path.exists(), "skill_files": len(skill_paths)})
+        elapsed_ms = round((time.perf_counter() - start) * 1000, 3)
+        root_reports.append(
+            {
+                "path": str(root_path),
+                "exists": root_path.exists(),
+                "skill_files": len(skill_paths),
+                "scan_ms": elapsed_ms,
+            }
+        )
         for skill_path in skill_paths:
-            fm = parse_frontmatter(skill_path)
-            name = fm.get("name") or skill_path.parent.name
-            description = fm.get("description", "")
-            if not name:
+            parsed, status = cache_entry_for_skill(skill_path, root_path, cached if use_cache else None)
+            if parsed is None:
                 continue
-            invocation_name = invocation_name_for_path(str(skill_path), name)
-            records.append(
-                {
-                    "name": name,
-                    "invocation_name": invocation_name,
-                    "description": description,
-                    "path": str(skill_path),
-                    "source_root": str(root_path),
+            if status == "hit":
+                cache_stats["hits"] += 1
+                record = parsed
+                try:
+                    stat = skill_path.stat()
+                except OSError:
+                    continue
+                next_entries[str(skill_path)] = {
+                    "record": record,
+                    "mtime_ns": stat.st_mtime_ns,
+                    "size": stat.st_size,
+                    "schema_version": CACHE_SCHEMA_VERSION,
                 }
-            )
-    return root_reports, records
+            else:
+                cache_stats["misses"] += 1
+                record = parsed["record"]
+                next_entries[str(skill_path)] = parsed
+            records.append(record)
+
+    if use_cache:
+        save_cache(cache_path or default_cache_path(), normalized_roots, next_entries)
+        cache_stats["writes"] = 1
+    return root_reports, records, cache_stats
 
 
 def collapse_duplicates(records: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
@@ -768,12 +876,39 @@ def collapse_alias_families(candidates: list[dict[str, Any]]) -> tuple[list[dict
     return collapsed, aliases
 
 
-def select_coverage_aware_finalists(candidates: list[dict[str, Any]], limit: int) -> list[dict[str, Any]]:
+def is_clarification_candidate(candidate: dict[str, Any]) -> bool:
+    invocation = normalize(candidate.get("invocation_name", ""))
+    name = normalize(candidate.get("name", ""))
+    family = normalize(candidate.get("canonical_family", ""))
+    aliases = {normalize(alias) for alias in candidate.get("aliases", [])}
+    values = {invocation, name, family, *aliases}
+    if values & CANONICAL_CLARIFICATION_INVOCATIONS:
+        return True
+    if invocation.endswith(":office-hours") or invocation.endswith(":gstack-office-hours"):
+        return True
+    if family.startswith("office-hours:") or family.startswith("gstack-office-hours:"):
+        return True
+    return False
+
+
+def select_coverage_aware_finalists(
+    candidates: list[dict[str, Any]],
+    limit: int,
+    *,
+    triage: str = "auto",
+) -> list[dict[str, Any]]:
     if limit <= 0:
         return []
     selected: list[dict[str, Any]] = []
     seen_families: set[str] = set()
     preferred_roles = ["primary", "source-access", "validation", "risk-planning"]
+
+    if triage == "clarification":
+        clarification = next((candidate for candidate in candidates if is_clarification_candidate(candidate)), None)
+        if clarification:
+            family = clarification.get("canonical_family") or canonical_family_for_record(clarification)
+            selected.append(clarification)
+            seen_families.add(family)
 
     for role in preferred_roles:
         if len(selected) >= limit:
@@ -977,7 +1112,15 @@ def score_skill(
 
 def build_report(args: argparse.Namespace) -> dict[str, Any]:
     roots = args.roots or default_roots()
-    root_reports, records = scan_roots(roots)
+    use_cache = not getattr(args, "no_cache", False)
+    cache_path = Path(getattr(args, "cache_path", "") or default_cache_path()).expanduser()
+    rebuild_cache = bool(getattr(args, "rebuild_cache", False))
+    root_reports, records, cache_stats = scan_roots(
+        roots,
+        use_cache=use_cache,
+        cache_path=cache_path,
+        rebuild_cache=rebuild_cache,
+    )
     unique_records, duplicates = collapse_duplicates(records)
 
     request_context = split_request_context(args.request)
@@ -993,6 +1136,10 @@ def build_report(args: argparse.Namespace) -> dict[str, Any]:
     excluded_capability_hints = detect_map(excluded_request, CAPABILITIES, "request") if excluded_request else []
     high_risk_terms = contains_any(positive_request, HIGH_RISK_TERMS)
     comparison_terms = contains_any(positive_request, COMPARISON_TERMS)
+    triage_mode = getattr(args, "triage", "auto") or "auto"
+    if triage_mode == "auto":
+        clarification_terms = contains_any(route_request, TASK_TYPES["ideation"]) + contains_any(route_request, HIGH_RISK_TERMS)
+        triage_mode = "clarification" if clarification_terms else "direct"
 
     scored = [
         score_skill(
@@ -1070,7 +1217,14 @@ def build_report(args: argparse.Namespace) -> dict[str, Any]:
     candidate_limit = args.complex_candidate_limit if complexity == "complex" else args.candidate_limit
     candidates = scored[:candidate_limit]
     no_special_skill = should_recommend_no_special_skill(traits, task_hints, capability_hints, candidates)
-    finalists = [] if no_special_skill else select_coverage_aware_finalists(candidates, max(0, min(args.finalist_limit, len(candidates))))
+    finalists = [] if no_special_skill else select_coverage_aware_finalists(
+        candidates,
+        max(0, min(args.finalist_limit, len(candidates))),
+        triage=triage_mode,
+    )
+    canonical_clarification_missing = triage_mode == "clarification" and not any(
+        is_clarification_candidate(candidate) for candidate in candidates
+    )
 
     ranked_candidates = []
     for index, candidate in enumerate(candidates, start=1):
@@ -1110,6 +1264,7 @@ def build_report(args: argparse.Namespace) -> dict[str, Any]:
             "unique_skills": len(unique_records),
             "roots_configured": roots,
             "roots_covered": root_reports,
+            "cache": cache_stats,
             "duplicates_found": len(duplicates),
             "duplicate_names": duplicates[:25],
             "alias_families_found": len(alias_families),
@@ -1130,9 +1285,15 @@ def build_report(args: argparse.Namespace) -> dict[str, Any]:
             "complexity_reasons": complexity_reasons,
             "candidate_limit": candidate_limit,
             "finalist_limit": args.finalist_limit,
+            "triage": triage_mode,
+            "canonical_clarification_skill_missing": canonical_clarification_missing,
             "no_special_skill_recommended": no_special_skill,
             "scoring": "deterministic weighted lexical frontmatter recall",
-            "finalist_selection": "coverage-aware role and alias-family selection",
+            "finalist_selection": (
+                "clarification-priority + coverage-aware role and alias-family selection"
+                if triage_mode == "clarification"
+                else "coverage-aware role and alias-family selection"
+            ),
         },
         "candidates": ranked_candidates,
         "finalists_to_read": finalists_to_read,
@@ -1156,11 +1317,18 @@ def print_markdown(report: dict[str, Any]) -> None:
         print(f"- Complexity reasons: {', '.join(analysis['complexity_reasons'])}")
     print(f"- Candidate limit: {analysis['candidate_limit']}")
     print(f"- Finalist limit: {analysis['finalist_limit']}")
+    print(f"- Triage mode: {analysis['triage']}")
+    print(
+        f"- Inventory cache: {'enabled' if inventory['cache']['enabled'] else 'disabled'} "
+        f"hits={inventory['cache']['hits']} misses={inventory['cache']['misses']}"
+    )
     print(f"- Task type hints: {', '.join(analysis['task_type_hints']) or 'none'}")
     print(f"- Capability hints: {', '.join(analysis['capability_hints']) or 'none'}")
     print(f"- Validation hints: {', '.join(analysis['validation_hints']) or 'none'}")
     if analysis.get("no_special_skill_recommended"):
         print("- No special skill recommended: yes (clear low-risk repository markdown/docs edit; use ordinary file inspection and available project checks)")
+    if analysis.get("canonical_clarification_skill_missing"):
+        print("- Canonical clarification skill missing: yes (`$office-hours` / `gstack-office-hours` not found in candidates)")
     if analysis["out_of_scope_request"]:
         print(f"- Out-of-scope task hints ignored/penalized: {', '.join(analysis['out_of_scope_task_type_hints']) or 'none'}")
         print(f"- Out-of-scope capability hints ignored/penalized: {', '.join(analysis['out_of_scope_capability_hints']) or 'none'}")
@@ -1198,6 +1366,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--complex-candidate-limit", type=int, default=15)
     parser.add_argument("--finalist-limit", type=int, default=4)
     parser.add_argument("--roots", nargs="*", default=None)
+    parser.add_argument("--triage", choices=["auto", "direct", "clarification"], default="auto")
+    parser.add_argument("--cache-path", default=None)
+    parser.add_argument("--no-cache", action="store_true")
+    parser.add_argument("--rebuild-cache", action="store_true")
     return parser.parse_args()
 
 

@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Simulate installing CEO Prompt Builder across supported agent hosts."""
+"""Simulate installing CEO Prompt Builder across supported agent hosts.
+
+Limitations:
+- Verifies copied file layout, adapter naming, inventory root coverage, and helper execution.
+- Does not launch Claude Code, OpenClaw, Hermes, or Codex runtime dispatch.
+- Does not verify marketplace/plugin registration, shell profile persistence, live model access, or host runtime permissions.
+"""
 
 from __future__ import annotations
 

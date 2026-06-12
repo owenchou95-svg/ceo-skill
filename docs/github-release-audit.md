@@ -163,7 +163,7 @@ Observed:
 
 - `Skill is valid!`
 - `Ran 38 tests ... OK`
-- SkillOpt aggregate eval passed: hard=1.0, soft=0.976859375, n=16.
+- Historical SkillOpt aggregate eval passed: hard=1.0, soft=0.976859375, n=16. Current release regression target is hard=1.0 and soft >= 0.987 unless an intentional evaluator/data change explains the difference.
 
 This validates the current skill structure, helper tests, and the SkillOpt acceptance gate for the approved P0/P1 optimization.
 

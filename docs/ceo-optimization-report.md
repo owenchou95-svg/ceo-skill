@@ -19,7 +19,7 @@ The user approved P0 + P1. The implementation landed in `bd2f47d Make CEO routin
 - Current validation after implementation:
   - `python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-creator/scripts/quick_validate.py" "${CODEX_HOME:-$HOME/.codex}/skills/ceo"` passes.
   - `python3 -m unittest discover -s scripts -p 'test_*.py'` passes 34 tests.
-  - SkillOpt aggregate eval passed: hard=1.0, soft=0.976859375, n=16.
+  - Historical SkillOpt aggregate eval passed: hard=1.0, soft=0.976859375, n=16. Current release regression target is hard=1.0 and soft >= 0.987 unless an intentional evaluator/data change explains the difference.
 
 ## Current Strengths
 

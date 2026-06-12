@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "required_top_level_sections": [
+    "Triage",
+    "Skill Inventory Report",
+    "Skill Match",
+    "Contract Check",
+    "Final Prompt",
+    "Assumptions"
+  ],
+  "optional_top_level_sections": [
+    "Conflicts / Choices"
+  ],
+  "required_final_prompt_headings": [
+    "Role",
+    "Objective",
+    "Requirements",
+    "Context",
+    "Thinking Process",
+    "Validation",
+    "Output Format"
+  ],
+  "triage": {
+    "direct_label": "Direct Path",
+    "clarification_label": "Clarification Path"
+  },
+  "clarification_route": {
+    "canonical_skill": "office-hours",
+    "canonical_aliases": [
+      "gstack-office-hours"
+    ],
+    "forbidden_hard_routes": [
+      "deep-interview",
+      "deep-interview --quick"
+    ],
+    "required_handoff_skill": "ceo"
+  },
+  "clarified_spec": {
+    "required_fields": [
+      "Goal",
+      "Deliverables",
+      "In Scope",
+      "Out of Scope / Non-goals",
+      "Inputs / Context",
+      "Decision Boundaries",
+      "Constraints",
+      "Acceptance Criteria",
+      "Risks and Reversibility",
+      "Open Questions",
+      "CEO Handoff Summary"
+    ]
+  },
+  "inventory_contract": {
+    "required_report_fields": [
+      "Scanned files",
+      "Unique skills",
+      "Duplicates found",
+      "Roots covered",
+      "Complexity",
+      "Candidate limit",
+      "Finalist limit",
+      "Candidates",
+      "Finalists To Read"
+    ],
+    "default_candidate_limit": 10,
+    "complex_candidate_limit": 15,
+    "finalist_limit": 4,
+    "full_read_limit_description": "Read only the top 3-4 finalist SKILL.md files unless fewer candidates exist.",
+    "scan_body_policy": "frontmatter-only"
+  },
+  "routing_policy": {
+    "selected_skills_must_trace_to_inventory": true,
+    "clarification_path_requires_office_hours_finalist_priority": true,
+    "deep_interview_quick_is_not_a_hard_clarification_route": true
+  },
+  "skillopt_regression_target": {
+    "hard": 1.0,
+    "soft_floor": 0.987
+  }
+}

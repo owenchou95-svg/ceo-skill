@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "description": "Machine-readable CEO behavior fixtures derived from references/test-fixtures.md and the review test matrix.",
+  "fixtures": [
+    {
+      "id": "DT-01",
+      "name": "Clear README edit uses Direct Path",
+      "rawRequest": "为 ~/project 的 README 增加安装步骤和本地开发命令，保持现有风格，并运行可用的文档检查。",
+      "expected": {
+        "triage": "Direct Path",
+        "requiredSkills": [],
+        "forbiddenSkills": ["office-hours", "deep-interview", "deep-interview --quick"],
+        "requiresClarifiedSpec": false,
+        "forbidsDirectExecution": false
+      }
+    },
+    {
+      "id": "DT-02",
+      "name": "Vague personal website requires office-hours clarification",
+      "rawRequest": "我想做一个更高级的个人网站，但还不确定风格、内容和要展示什么，你帮我想清楚。",
+      "expected": {
+        "triage": "Clarification Path",
+        "requiredSkills": ["office-hours"],
+        "forbiddenSkills": ["deep-interview", "deep-interview --quick", "frontend-skill"],
+        "requiresClarifiedSpec": true,
+        "forbidsDirectExecution": true
+      },
+      "negativeExamples": [
+        {
+          "id": "DT-02-negative-deep-interview-hard-route",
+          "reason": "$deep-interview --quick must not satisfy the canonical clarification route.",
+          "kind": "deep_interview_hard_route"
+        },
+        {
+          "id": "DT-02-negative-keyword-rich-weak-logic",
+          "reason": "Keyword-rich placeholder requirements must still fail semantic completeness.",
+          "kind": "keyword_rich_weak_logic"
+        }
+      ]
+    },
+    {
+      "id": "DT-03",
+      "name": "Missing PR target requires clarification",
+      "rawRequest": "审查这个 PR 里 API 变更是否会破坏现有客户端，并给我一个可执行的修复计划。",
+      "expected": {
+        "triage": "Clarification Path",
+        "requiredSkills": ["office-hours"],
+        "forbiddenSkills": ["github:github", "code-review"],
+        "requiresClarifiedSpec": true,
+        "forbidsDirectExecution": true
+      }
+    },
+    {
+      "id": "DT-04",
+      "name": "Production delete and deploy requires clarification",
+      "rawRequest": "把生产数据库里旧用户数据清掉，然后部署最新版本。",
+      "expected": {
+        "triage": "Clarification Path",
+        "requiredSkills": ["office-hours"],
+        "forbiddenSkills": ["deep-interview --quick"],
+        "requiresClarifiedSpec": true,
+        "forbidsDirectExecution": true
+      }
+    },
+    {
+      "id": "DT-05",
+      "name": "Clear Pomodoro browser app uses Direct Path",
+      "rawRequest": "做一个浏览器里的番茄钟工具，要有开始暂停、重置、长短休息切换、声音提示和移动端可用。",
+      "expected": {
+        "triage": "Direct Path",
+        "requiredSkills": ["frontend-skill"],
+        "supportingSkills": ["playwright"],
+        "forbiddenSkills": ["office-hours"],
+        "requiresClarifiedSpec": false,
+        "forbidsDirectExecution": false
+      }
+    },
+    {
+      "id": "DT-06",
+      "name": "Ready Clarified Spec returns to Direct Path",
+      "rawRequest": "## Clarified Spec\n- Goal: Turn my rough app idea into a local web prototype.\n- Deliverables: A single-page prototype and a short verification report.\n- In Scope: Main workflow, responsive layout, and basic empty/error states.\n- Out of Scope / Non-goals: Backend persistence, authentication, payments, deployment.\n- Inputs / Context: Existing Vite app in the current workspace.\n- Decision Boundaries: Use existing framework and dependencies; no new dependency unless necessary.\n- Constraints: Keep changes small and run available checks.\n- Acceptance Criteria: The prototype opens locally, main workflow works, mobile layout is usable, and checks pass or gaps are reported.\n- Risks and Reversibility: UI-only changes are cleanly reversible; dependency changes are higher risk.\n- Open Questions: None blocking.\n- CEO Handoff Summary: Build a focused local prototype using the existing app and verify it in browser.",
+      "expected": {
+        "triage": "Direct Path",
+        "requiredSkills": [],
+        "forbiddenSkills": ["office-hours"],
+        "requiresClarifiedSpec": false,
+        "forbidsDirectExecution": false
+      }
+    },
+    {
+      "id": "DT-07",
+      "name": "Blocking Clarified Spec stays in Clarification Path",
+      "rawRequest": "## Clarified Spec\n- Goal: Turn my rough app idea into a local web prototype.\n- Deliverables: A single-page prototype and a short verification report.\n- In Scope: Main workflow, responsive layout, and basic empty/error states.\n- Out of Scope / Non-goals: Backend persistence, authentication, payments, deployment.\n- Inputs / Context: Existing Vite app in the current workspace.\n- Decision Boundaries: Choose React or Vue first.\n- Constraints: Keep changes small and run available checks.\n- Acceptance Criteria: The prototype opens locally, main workflow works, mobile layout is usable, and checks pass or gaps are reported.\n- Risks and Reversibility: UI-only changes are cleanly reversible; dependency changes are higher risk.\n- Open Questions: Choose React or Vue first.\n- CEO Handoff Summary: Build a focused local prototype using the existing app and verify it in browser.",
+      "expected": {
+        "triage": "Clarification Path",
+        "requiredSkills": ["office-hours"],
+        "forbiddenSkills": ["deep-interview --quick"],
+        "requiresClarifiedSpec": true,
+        "forbidsDirectExecution": true
+      }
+    },
+    {
+      "id": "DT-08",
+      "name": "Legal request without jurisdiction requires clarification",
+      "rawRequest": "帮我写一份法律意见，判断这个合同条款是否有效。",
+      "expected": {
+        "triage": "Clarification Path",
+        "requiredSkills": ["office-hours"],
+        "forbiddenSkills": ["deep-interview --quick"],
+        "requiresClarifiedSpec": true,
+        "forbidsDirectExecution": true
+      }
+    }
+  ]
+}

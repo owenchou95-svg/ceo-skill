@@ -2,6 +2,8 @@
 
 Use these fixtures when evaluating or changing the CEO skill. A generated response passes only when it follows the current `SKILL.md` output format, includes `Triage`, `Skill Inventory Report`, and `Contract Check`, uses the required final prompt headings, and satisfies the expected behavior for the fixture.
 
+Machine-readable coverage now lives in `references/eval-fixtures.json`. Keep this Markdown file as the human-readable explanation, but update the JSON fixture file whenever adding, renaming, or changing expected behavior.
+
 Global expected behavior:
 
 - Run `scripts/skill_inventory.py` before selecting skills.

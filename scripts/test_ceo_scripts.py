@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import subprocess
 import tempfile
@@ -16,6 +17,8 @@ REPO_ROOT = SCRIPT_DIR.parent
 sys.path.insert(0, str(SCRIPT_DIR))
 import evaluate_ceo_output as evaluator
 import skill_inventory
+import validate_contract_drift
+import validate_eval_fixtures
 
 
 def inventory_args(request: str, roots: list[str] | None = None) -> argparse.Namespace:
@@ -26,6 +29,10 @@ def inventory_args(request: str, roots: list[str] | None = None) -> argparse.Nam
         complex_candidate_limit=15,
         finalist_limit=4,
         roots=roots,
+        triage="auto",
+        cache_path=None,
+        no_cache=True,
+        rebuild_cache=False,
     )
 
 
@@ -269,6 +276,37 @@ class EvaluatorTests(unittest.TestCase):
         self.assertTrue(result["passed"], result["failures"])
         self.assertEqual("Clarification Path", result["triage_expected"])
         self.assertTrue(result["clarification_route_passed"])
+
+    def test_deep_interview_quick_hard_route_fails_even_with_clarified_spec(self) -> None:
+        text = valid_clarification_output().replace("$office-hours", "$deep-interview --quick")
+        result = evaluator.check_contract(
+            text,
+            "我想做一个更高级的个人网站，但还不确定风格、内容和要展示什么，你帮我想清楚。",
+        )
+        self.assertFalse(result["passed"])
+        self.assertIn("Clarification Path must route to $office-hours.", result["failures"])
+
+    def test_deep_interview_quick_canonical_wording_fails_even_when_office_hours_present(self) -> None:
+        text = valid_clarification_output().replace(
+            "## Skill Match\n",
+            "## Skill Match\n- Required canonical hard route: `$deep-interview --quick` before `$office-hours`.\n",
+            1,
+        )
+        result = evaluator.check_contract(
+            text,
+            "我想做一个更高级的个人网站，但还不确定风格、内容和要展示什么，你帮我想清楚。",
+        )
+        self.assertFalse(result["passed"])
+        self.assertIn("must not make $deep-interview --quick", "\n".join(result["failures"]))
+
+    def test_keyword_rich_but_weak_requirements_fail(self) -> None:
+        text = valid_ceo_output().replace(
+            "## Requirements\n- Inputs: the current workspace and existing app structure.\n- In scope: start, pause, reset, long-break mode, short-break mode, sound alert, responsive UI, and accessible controls.\n- Out of scope / non-goals: backend persistence, payments, deployment, and authentication.\n- Deliverables: code changes for the timer and a short verification report with changed file paths.\n- Constraints: reuse existing framework and dependencies; no new dependency unless necessary.\n- Assumptions and boundaries:\n  - Assumption: an existing frontend app is available.\n    Boundary: inspect the app before changing files and keep edits scoped to UI code.\n    Risk: if no app exists, implementation cannot proceed safely.\n    Reversibility: clean.\n- Failure / escalation conditions: stop and report a blocker if no app entrypoint exists or if audio cannot be tested in the browser.\n",
+            "## Requirements\n- Inputs: inputs and context are covered.\n- In scope: in scope is handled.\n- Out of scope / non-goals: non-goals are considered.\n- Deliverables: deliverables are produced.\n- Constraints: assumptions, boundaries, risk, and reversibility are included.\n- Failure / escalation conditions: failure and escalation are handled.\n",
+        )
+        result = evaluator.check_contract(text)
+        self.assertFalse(result["passed"])
+        self.assertIn("placeholder or too-generic", "\n".join(result["semantic_failures"]))
 
     def test_production_delete_execution_prompt_fails(self) -> None:
         result = evaluator.check_contract(
@@ -639,6 +677,52 @@ class InventoryTests(unittest.TestCase):
             self.assertIn("source-access", roles)
             self.assertLessEqual(len(report["finalists_to_read"]), 4)
 
+    def test_clarification_path_forces_office_hours_finalist_rank_1(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            self.make_skill(root, "frontend", "frontend-skill", "frontend website app build")
+            self.make_skill(root, "playwright", "playwright", "browser testing validation screenshot")
+            self.make_skill(root, "office", "office-hours", "YC Office Hours clarify vague product requirements scope")
+            args = inventory_args("我想做一个产品但不确定是否值得做，请帮我想清楚方向和范围。", [str(root)])
+            args.triage = "clarification"
+            report = skill_inventory.build_report(args)
+            self.assertEqual("office-hours", report["finalists_to_read"][0]["invocation_name"])
+            self.assertIn("clarification-priority", report["request_analysis"]["finalist_selection"])
+
+    def test_clarification_path_gstack_office_hours_alias_rank_1(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            self.make_skill(root, "frontend", "frontend-skill", "frontend website app build")
+            self.make_skill(root, "office", "gstack-office-hours", "YC Office Hours clarify vague product requirements scope")
+            args = inventory_args("我想做一个产品但不确定是否值得做，请帮我想清楚方向和范围。", [str(root)])
+            args.triage = "clarification"
+            report = skill_inventory.build_report(args)
+            self.assertEqual("gstack-office-hours", report["finalists_to_read"][0]["invocation_name"])
+
+    def test_inventory_cache_cold_warm_and_invalidation(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp) / "skills"
+            cache_path = Path(temp) / "cache.json"
+            self.make_skill(root, "office", "office-hours", "YC Office Hours clarify vague product requirements scope")
+            args = inventory_args("我不确定产品方向，请帮我想清楚。", [str(root)])
+            args.triage = "clarification"
+            args.no_cache = False
+            args.cache_path = str(cache_path)
+            args.rebuild_cache = True
+            cold = skill_inventory.build_report(args)
+            self.assertEqual(0, cold["inventory"]["cache"]["hits"])
+            self.assertGreaterEqual(cold["inventory"]["cache"]["misses"], 1)
+            args.rebuild_cache = False
+            warm = skill_inventory.build_report(args)
+            self.assertGreaterEqual(warm["inventory"]["cache"]["hits"], 1)
+            changed = root / "office" / "SKILL.md"
+            changed.write_text(
+                "---\nname: office-hours\ndescription: YC Office Hours clarify vague product requirements scope updated\n---\n",
+                encoding="utf-8",
+            )
+            invalidated = skill_inventory.build_report(args)
+            self.assertGreaterEqual(invalidated["inventory"]["cache"]["misses"], 1)
+
     def test_explicit_dollar_invocation_matches_skill(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
@@ -687,6 +771,15 @@ class InventoryTests(unittest.TestCase):
 
 
 class ReleaseArtifactTests(unittest.TestCase):
+    def test_contract_drift_check_passes(self) -> None:
+        failures = validate_contract_drift.validate_contract_drift()
+        self.assertEqual([], failures)
+
+    def test_structured_eval_fixtures_are_valid(self) -> None:
+        payload = json.loads((REPO_ROOT / "references" / "eval-fixtures.json").read_text(encoding="utf-8"))
+        failures = validate_eval_fixtures.validate_fixture_payload(payload)
+        self.assertEqual([], failures)
+
     def test_multi_agent_adapter_notes_exist_without_skill_filename(self) -> None:
         adapters = {
             "claude-code": "Claude Code",
@@ -738,6 +831,53 @@ class ReleaseArtifactTests(unittest.TestCase):
         self.assertIn("Multi-agent install verification: PASS", result.stdout)
         for host in ["codex", "claude-code", "openclaw", "hermes"]:
             self.assertIn(f"- {host}: ok", result.stdout)
+
+    def test_benchmark_script_fast_sample_passes(self) -> None:
+        result = subprocess.run(
+            [sys.executable, str(SCRIPT_DIR / "benchmark_skill_inventory_scale.py"), "--sizes", "7", "20", "--format", "json"],
+            cwd=REPO_ROOT,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertEqual(0, result.returncode, result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertTrue(all(item["clarification_priority_rank1"] for item in payload["benchmarks"]))
+
+    def test_host_native_smoke_script_skips_or_passes(self) -> None:
+        result = subprocess.run(
+            [sys.executable, str(SCRIPT_DIR / "smoke_host_native_cli.py"), "--format", "json"],
+            cwd=REPO_ROOT,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertEqual(0, result.returncode, result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertTrue(payload["passed"])
+
+    def test_live_model_fixture_suite_saves_outputs_and_results(self) -> None:
+        timestamp = f"test-{os.getpid()}"
+        result = subprocess.run(
+            [sys.executable, str(SCRIPT_DIR / "run_live_model_samples.py"), "--mode", "fixture", "--timestamp", timestamp],
+            cwd=REPO_ROOT,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertEqual(0, result.returncode, result.stderr + result.stdout)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["passed"], payload["total"])
+        generated = REPO_ROOT / "evals" / "live-model" / "generated" / timestamp
+        results = REPO_ROOT / "evals" / "live-model" / "results" / timestamp
+        self.assertTrue(generated.exists())
+        self.assertTrue((results / "evaluator-results.jsonl").exists())
+        for path in sorted(generated.glob("*.md")):
+            path.unlink()
+        for path in sorted(results.glob("*")):
+            path.unlink()
+        generated.rmdir()
+        results.rmdir()
 
 
 if __name__ == "__main__":

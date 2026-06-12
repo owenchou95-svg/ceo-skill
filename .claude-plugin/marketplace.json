@@ -1,0 +1,14 @@
+{
+  "name": "ceo",
+  "displayName": "CEO Prompt Builder",
+  "description": "Compile rough user intent into executable agent specifications with local skill inventory evidence.",
+  "version": "0.1.0",
+  "license": "MIT",
+  "repository": "https://github.com/owenchou95-svg/ceo-skill",
+  "skills": [
+    {
+      "name": "ceo",
+      "path": "SKILL.md"
+    }
+  ]
+}

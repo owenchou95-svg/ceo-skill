@@ -10,25 +10,11 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from contract_schema import load_contract_schema
 
-REQUIRED_TOP_LEVEL_SECTIONS = [
-    "Triage",
-    "Skill Inventory Report",
-    "Skill Match",
-    "Contract Check",
-    "Final Prompt",
-    "Assumptions",
-]
-
-REQUIRED_FINAL_PROMPT_HEADINGS = [
-    "Role",
-    "Objective",
-    "Requirements",
-    "Context",
-    "Thinking Process",
-    "Validation",
-    "Output Format",
-]
+CONTRACT_SCHEMA = load_contract_schema()
+REQUIRED_TOP_LEVEL_SECTIONS = list(CONTRACT_SCHEMA["required_top_level_sections"])
+REQUIRED_FINAL_PROMPT_HEADINGS = list(CONTRACT_SCHEMA["required_final_prompt_headings"])
 
 SKILL_INVOCATION_RE = re.compile(r"\$([A-Za-z0-9][A-Za-z0-9:_-]*)")
 CANDIDATE_LINE_RE = re.compile(
@@ -146,21 +132,11 @@ VALIDATION_EVIDENCE_TERMS = [
 
 TRIAGE_DIRECT = "Direct Path"
 TRIAGE_CLARIFICATION = "Clarification Path"
-CANONICAL_CLARIFICATION_SKILL = "office-hours"
+CANONICAL_CLARIFICATION_SKILL = CONTRACT_SCHEMA["clarification_route"]["canonical_skill"]
+CANONICAL_CLARIFICATION_ALIASES = set(CONTRACT_SCHEMA["clarification_route"].get("canonical_aliases", []))
+FORBIDDEN_HARD_CLARIFICATION_ROUTES = set(CONTRACT_SCHEMA["clarification_route"].get("forbidden_hard_routes", []))
 
-CLARIFIED_SPEC_FIELDS = [
-    "Goal",
-    "Deliverables",
-    "In Scope",
-    "Out of Scope / Non-goals",
-    "Inputs / Context",
-    "Decision Boundaries",
-    "Constraints",
-    "Acceptance Criteria",
-    "Risks and Reversibility",
-    "Open Questions",
-    "CEO Handoff Summary",
-]
+CLARIFIED_SPEC_FIELDS = list(CONTRACT_SCHEMA["clarified_spec"]["required_fields"])
 
 VAGUE_REQUEST_TERMS = [
     "not sure",
@@ -687,7 +663,22 @@ def weak_requirement_fields(requirements_text: str) -> list[str]:
         ]
         if not meaningful:
             weak.append(label)
+        elif any(is_semantically_generic_requirement_value(value) for value in meaningful):
+            weak.append(label)
     return weak
+
+
+def is_semantically_generic_requirement_value(value: str) -> bool:
+    normalized = re.sub(r"\s+", " ", value.strip().lower()).strip(".")
+    generic_patterns = [
+        r"^(?:the\s+)?inputs?\s+and\s+context\s+are\s+covered$",
+        r"^in\s+scope\s+is\s+handled$",
+        r"^(?:non[-\s]?goals?|out\s+of\s+scope)\s+are\s+(?:considered|covered)$",
+        r"^deliverables?\s+are\s+(?:produced|covered|handled)$",
+        r"^(?:assumptions?,?\s*)?boundaries?,?\s*risk,?\s*and\s*reversibility\s+are\s+(?:included|covered|handled)$",
+        r"^failure\s+and\s+escalation\s+are\s+handled$",
+    ]
+    return any(re.match(pattern, normalized) for pattern in generic_patterns)
 
 
 def contract_term_count(contract_text: str) -> int:
@@ -758,13 +749,27 @@ def triage_failures_for_request(text: str, request: str | None) -> tuple[dict[st
 
     clarification_route_passed = True
     if expected["requires_clarification"]:
-        has_office_hours = CANONICAL_CLARIFICATION_SKILL in selected_skills or f"${CANONICAL_CLARIFICATION_SKILL}" in text
+        has_office_hours = (
+            CANONICAL_CLARIFICATION_SKILL in selected_skills
+            or any(alias in selected_skills for alias in CANONICAL_CLARIFICATION_ALIASES)
+            or f"${CANONICAL_CLARIFICATION_SKILL}" in text
+            or any(f"${alias}" in text for alias in CANONICAL_CLARIFICATION_ALIASES)
+        )
         has_ceo_handoff = "$ceo" in text or re.search(r"back to\s+\$?ceo|return to\s+\$?ceo|回到\s*\$?ceo", text, re.IGNORECASE)
         asks_for_clarified_spec = "Clarified Spec" in final_prompt
         direct_execution = has_unnegated_execution_action(final_combined)
-        clarification_route_passed = has_office_hours and has_ceo_handoff and asks_for_clarified_spec and not direct_execution
+        forbidden_hard_route = forbidden_clarification_route_required(text)
+        clarification_route_passed = (
+            has_office_hours
+            and has_ceo_handoff
+            and asks_for_clarified_spec
+            and not direct_execution
+            and not forbidden_hard_route
+        )
         if not has_office_hours:
             failures.append("Clarification Path must route to $office-hours.")
+        if forbidden_hard_route:
+            failures.append("Clarification Path must not make $deep-interview --quick or $deep-interview the canonical hard route.")
         if not has_ceo_handoff:
             failures.append("Clarification Path must hand off back to $ceo.")
         if not asks_for_clarified_spec:
@@ -781,6 +786,25 @@ def triage_failures_for_request(text: str, request: str | None) -> tuple[dict[st
         "clarified_spec_readiness": expected["clarified_spec_readiness"],
     }
     return triage_result, failures
+
+
+def forbidden_clarification_route_required(text: str) -> bool:
+    """Detect forbidden clarification routes only when they are required/canonical, not historical notes."""
+    route_patterns = [
+        r"must\s+(?:route|use|invoke|call)\s+(?:to\s+)?[`'\"]?\$?{route}[`'\"]?",
+        r"requires?\s+[`'\"]?\$?{route}[`'\"]?",
+        r"canonical\s+(?:clarification\s+)?route\s*(?:is|:)?\s*[`'\"]?\$?{route}[`'\"]?",
+        r"hard\s+(?:clarification\s+)?route\s*(?:is|:)?\s*[`'\"]?\$?{route}[`'\"]?",
+        r"必须(?:路由|使用|调用)\s*[`'\"]?\$?{route}[`'\"]?",
+        r"规范(?:澄清)?路由\s*(?:是|:)?\s*[`'\"]?\$?{route}[`'\"]?",
+    ]
+    text_l = text.lower()
+    for route in FORBIDDEN_HARD_CLARIFICATION_ROUTES:
+        escaped = re.escape(route.lower()).replace("\\ ", r"\s+")
+        for pattern in route_patterns:
+            if re.search(pattern.format(route=escaped), text_l, re.IGNORECASE):
+                return True
+    return False
 
 
 def check_contract(text: str, request: str | None = None) -> dict[str, Any]:
