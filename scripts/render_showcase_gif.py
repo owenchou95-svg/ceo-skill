@@ -39,26 +39,41 @@ def write_gif(path: Path) -> None:
     rect(64, 36, 76, 48, 4)
     rect(84, 36, 96, 48, 1)
 
-    lines = [
-        (52, 84, 450, 1),
-        (52, 124, 250, 3),
-        (52, 152, 520, 2),
-        (52, 196, 300, 4),
-        (84, 224, 420, 2),
-        (84, 248, 190, 2),
-        (84, 272, 260, 1),
-        (52, 312, 500, 3),
+    # Three route cards: Task, Goal gap, Risk boundary.
+    rect(52, 78, 318, 88, 2)
+    rect(52, 94, 430, 104, 3)
+    cards = [
+        (52, 132, 188, 290, 1),
+        (252, 132, 388, 290, 4),
+        (452, 132, 588, 290, 5),
     ]
-    for x, y, length, color in lines:
-        rect(x, y, x + length, y + 10, color)
-        for gap in range(x + 58, x + length, 96):
-            rect(gap, y, min(gap + 8, x + length), y + 10, 7)
+    for x0, y0, x1, y1, accent in cards:
+        rect(x0, y0, x1, y1, 0)
+        rect(x0 + 3, y0 + 3, x1 - 3, y1 - 3, 7)
+        rect(x0 + 3, y0 + 3, x1 - 3, y0 + 18, accent)
+        rect(x0 + 18, y0 + 38, x1 - 18, y0 + 48, 2)
+        rect(x0 + 18, y0 + 68, x1 - 32, y0 + 78, 3)
+        rect(x0 + 18, y0 + 96, x1 - 46, y0 + 106, accent)
+        rect(x0 + 18, y0 + 124, x1 - 24, y0 + 134, 2)
+        for gap in range(x0 + 76, x1 - 24, 42):
+            rect(gap, y0 + 124, min(gap + 6, x1 - 24), y0 + 134, 7)
+
+    rect(52, 314, 588, 324, 3)
+    rect(52, 334, 460, 344, 2)
 
     min_code_size = 8
     clear = 1 << min_code_size
     end = clear + 1
     code_size = min_code_size + 1
-    codes = [clear] + list(pixels) + [end]
+    codes = []
+    emitted_since_clear = 0
+    for pixel in pixels:
+        if emitted_since_clear == 0 or emitted_since_clear >= 200:
+            codes.append(clear)
+            emitted_since_clear = 0
+        codes.append(pixel)
+        emitted_since_clear += 1
+    codes.append(end)
     bitstream = bytearray()
     bitbuf = 0
     bitcount = 0

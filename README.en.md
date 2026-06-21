@@ -24,6 +24,16 @@
 
 ---
 
+CEO's real trick is not "writing a better prompt". It decides whether execution is allowed yet:
+
+| User input | CEO route | Deliverable |
+| --- | --- | --- |
+| "Add install steps to the README" | `Task Mode -> Direct Path` | An executable brief with inventory evidence and validation commands |
+| "I want to make the CEO skill smarter" | `Goal Mode -> Incomplete` | One gap-targeted `Blocking Question`, no execution prompt |
+| "I want to clean production data and redeploy" | `Goal Mode -> Risk Boundary` | A risk-boundary clarification, no delete/deploy commands |
+
+---
+
 ## What Problem It Solves
 
 You tell an agent: "build me a better website", "review this PR", or "delete old production data and deploy". A normal agent may start too early, guess missing requirements, or keep choosing the same familiar skills.
@@ -39,20 +49,28 @@ Use it when you have many installed skills, unclear task boundaries, or want the
 | Clear docs edit | `Direct Path` | Allows `No special skill recommended` for low-risk README work | [examples/direct-readme.md](examples/direct-readme.md) |
 | Vague product/site idea | `Clarification Path` | Ranks `$office-hours` first and requests `## Clarified Spec` | [examples/clarify-website.md](examples/clarify-website.md) |
 | High-risk production operation | `Clarification Path` | Blocks irreversible deletion/deploy work until authority and rollback are clear | [examples/high-risk-production.md](examples/high-risk-production.md) |
+| Unclear goal | `Goal Mode: Incomplete` | Asks one blocking question when desired state, acceptance, or first slice is missing | [evals/live-model/cases.jsonl](evals/live-model/cases.jsonl) |
+| High-risk goal | `Goal Mode: Risk Boundary` | Production, auth, deletion, and deploy goals require authority, rollback, dry-run, and stop conditions | [evals/live-model/cases.jsonl](evals/live-model/cases.jsonl) |
 
 Result card:
 
 - [assets/result-card.md](assets/result-card.md): the current score, Luban birth-check result, and verification evidence.
 
-A CEO response contains:
+A CEO response starts with `Mode Router`, which decides whether the input is `Task Mode` or `Goal Mode`. Task Mode still produces an executable brief. Goal Mode first produces a goal contract, local blocking question, discovery clarification, or risk-boundary clarification, and returns to Task Mode only when a first executable slice is ready.
 
-1. `Triage`
-2. `Skill Inventory Report`
-3. `Skill Match`
-4. `Conflicts / Choices` when needed
-5. `Contract Check`
-6. `Final Prompt`
-7. `Assumptions`
+Task Mode responses contain:
+
+1. `Mode Router`
+2. `Triage`
+3. `Inventory Decision`
+4. `Skill Inventory Report`
+5. `Skill Match`
+6. `Conflicts / Choices` when needed
+7. `Contract Check`
+8. `Final Prompt`
+9. `Assumptions`
+
+Goal Mode responses contain `Goal Mode`, `Goal Contract Check`, `Clarification Type`, `Inventory Decision`, and `Route Decision`, then route by status to `Blocking Question`, `Task Mode Handoff`, `Final Prompt`, or `Clarification Prompt`.
 
 The `Final Prompt` keeps these required headings so the downstream agent can execute it:
 
@@ -110,7 +128,10 @@ CEO delivers an executable brief, not prettier wording:
 
 | Capability | Deliverable | Why It Matters |
 | --- | --- | --- |
-| Demand routing | `Direct Path` / `Clarification Path` | Prevents vague or high-risk tasks from being executed too early |
+| Mode routing | `Mode Router` | Separates executable tasks from goals that need refinement first |
+| Demand routing | `Direct Path` / `Clarification Path` | Prevents vague or high-risk tasks from being executed too early inside Task Mode |
+| Goal refinement | `Goal Mode` / `Goal Contract Check` / `Domain Gate` | Turns goal-shaped input into a blocking question, discovery route, risk boundary, or first executable slice |
+| Inventory decision | `Inventory Decision` | States whether inventory ran and whether its input was the raw task, clarification intent, or first slice |
 | Skill discovery | `Skill Inventory Report` | Makes skill choice traceable instead of memory-based |
 | Skill selection | `Skill Match` + finalist scoring | Keeps only strong matches and useful support skills |
 | Spec contract | `Final Prompt` | Gives the downstream agent goals, boundaries, deliverables, and validation |
@@ -131,15 +152,26 @@ CEO delivers an executable brief, not prettier wording:
 
 ```text
 Raw request
-  -> Demand Triage
-  -> Skill Inventory (frontmatter-only scan + cache)
-  -> Candidate Ranking
-  -> Finalist Reads (3-4 max)
-  -> Skill Match
-  -> Contract Check
-  -> Final Prompt
-  -> Evaluator
-  -> SkillOpt benchmark
+-> Mode Router
+  -> Task Mode
+     -> Demand Triage
+     -> Inventory Decision
+     -> Skill Inventory (frontmatter-only scan + cache)
+     -> Candidate Ranking
+     -> Finalist Reads (3-4 max)
+     -> Skill Match
+     -> Contract Check
+     -> Final Prompt
+     -> Evaluator
+  -> Goal Mode
+     -> Goal Contract Check
+     -> Domain Gate
+     -> Clarification Type
+     -> Inventory Decision
+     -> Route Decision
+        -> Incomplete: Blocking Question, no execution Final Prompt
+        -> Complete: Task Mode Handoff, inventory on First Executable Slice + Goal Spec
+        -> Routed: Discovery or Risk Boundary clarification
 ```
 
 Default scan roots:

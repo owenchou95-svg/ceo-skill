@@ -1,6 +1,6 @@
 # CEO Prompt Builder Showcase
 
-This is the 30-second demo script used by `assets/showcase.tape` and summarized by `assets/showcase.gif`.
+This showcase demonstrates the three routes CEO must make visible before any downstream agent executes work.
 
 Regenerate the committed GIF without third-party dependencies:
 
@@ -8,46 +8,45 @@ Regenerate the committed GIF without third-party dependencies:
 python3 scripts/render_showcase_gif.py
 ```
 
-## Scene 1: Rough Request
+## Route 1: Task Mode / Direct Path
 
 ```text
-$ceo 我想做一个更高级的个人网站，但还不确定风格、内容和要展示什么。
+$ceo 为 ~/project 的 README 增加安装步骤和本地开发命令，保持现有风格，并运行可用的文档检查。
 ```
-
-## Scene 2: CEO Refuses To Guess
 
 ```text
-Triage: Clarification Path
-
-Reason: style, content, audience, deliverables, and success criteria are not settled.
-CEO will not invent an implementation brief.
+Mode Router: Task Mode
+Triage: Direct Path
+Inventory Decision: Run on raw user request
+Output: Final Prompt with validation commands
 ```
 
-## Scene 3: Skill Inventory Evidence
+## Route 2: Goal Mode / Incomplete
 
 ```text
-Skill Inventory Report
-- Scanned roots: Codex, plugins/cache, agents, Claude, OpenClaw, Hermes
-- Candidate limit: 10
-- Finalist limit: 4
-- Finalist #1: $office-hours
+$ceo 我想把 CEO skill 做得更智能。
 ```
 
-## Scene 4: Executable Handoff
+```text
+Mode Router: Goal Mode
+Goal Mode: Incomplete
+Inventory Decision: No
+Output: one Blocking Question, no Final Prompt
+```
 
-```md
-## Final Prompt
-Use $office-hours.
+## Route 3: Goal Mode / Risk Boundary
 
-## Objective
-Clarify the website idea enough for $ceo to produce the final execution prompt.
+```text
+$ceo 我想清理生产数据库并重新部署系统。
+```
 
-## Output Format
-Return ## Clarified Spec with Goal, Deliverables, In Scope, Out of Scope,
-Decision Boundaries, Acceptance Criteria, Risks, Open Questions, and:
-Return this Clarified Spec to $ceo for the final execution prompt.
+```text
+Mode Router: Goal Mode
+Goal Mode: Routed
+Clarification Type: Risk Boundary
+Output: Risk-Bounded Clarified Spec, no deletion or deploy commands
 ```
 
 ## What The Viewer Should Understand
 
-CEO is not a prompt polisher. It is the routing and contract layer before execution.
+CEO is not a prompt polisher. It is the routing, inventory, and contract layer before execution. It can green-light bounded tasks, ask one gap-targeted question for unclear goals, and block high-risk goals until risk boundaries are explicit.

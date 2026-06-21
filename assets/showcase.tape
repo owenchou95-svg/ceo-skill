@@ -5,33 +5,33 @@ Set Height 720
 Set Padding 24
 Set Theme "Dracula"
 
-Type "$ceo 我想做一个更高级的个人网站，但还不确定风格、内容和要展示什么。"
+Type "$ceo 为 README 增加安装步骤，并运行可用检查。"
 Sleep 700ms
 Enter
 Sleep 800ms
 
-Type "Triage: Clarification Path"
+Type "Route 1: Task Mode -> Direct Path"
 Enter
-Type "Reason: style, content, audience, deliverables, and success criteria are not settled."
+Type "Output: inventory-backed Final Prompt with validation commands"
 Enter
 Sleep 700ms
 
-Type "Skill Inventory Report"
+Type "$ceo 我想把 CEO skill 做得更智能。"
 Enter
-Type "- Scanned roots: Codex, plugins/cache, agents, Claude, OpenClaw, Hermes"
+Sleep 700ms
 Enter
-Type "- Candidate limit: 10"
+Type "Route 2: Goal Mode -> Incomplete"
 Enter
-Type "- Finalist limit: 4"
+Type "Output: one Blocking Question, no execution prompt"
 Enter
-Type "- Finalist #1: $office-hours"
-Enter
-Sleep 900ms
+Sleep 700ms
 
-Type "Final Prompt"
+Type "$ceo 我想清理生产数据库并重新部署系统。"
 Enter
-Type "Use $office-hours to return ## Clarified Spec."
+Sleep 700ms
 Enter
-Type "Then return that spec to $ceo for the final execution prompt."
+Type "Route 3: Goal Mode -> Risk Boundary"
+Enter
+Type "Output: risk-bounded spec, no delete/deploy commands"
 Enter
 Sleep 1200ms

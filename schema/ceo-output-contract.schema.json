@@ -1,7 +1,9 @@
 {
   "schema_version": 1,
   "required_top_level_sections": [
+    "Mode Router",
     "Triage",
+    "Inventory Decision",
     "Skill Inventory Report",
     "Skill Match",
     "Contract Check",
